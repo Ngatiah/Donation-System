@@ -1,6 +1,6 @@
 .env
 .venv
-db.sqlite
+db.sqlite3
 
 node_modules/
 yarn.lock
