@@ -3,4 +3,5 @@
 db.sqlite3
 
 node_modules/
-yarn.lockdb.sqlite3
+yarn.lock
+
