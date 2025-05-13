@@ -1,0 +1,31 @@
+{% block content  %}
+<div class="max-w-xl mx-auto bg-white shadow-md rounded-lg p-6 mt-10">
+    <h2 class="text-2xl font-semibold text-blue-600 mb-4">User Profile</h2>
+  
+    <div class="space-y-4">
+      <!-- Name -->
+      <div class="flex items-center">
+        <span class="w-32 font-medium text-gray-700">Name:</span>
+        <span class="text-gray-900" id="profile-name">John Doe</span>
+      </div>
+  
+      <!-- Contact -->
+      <div class="flex items-center">
+        <span class="w-32 font-medium text-gray-700">Contact:</span>
+        <span class="text-gray-900" id="profile-contact">+1 234 567 8901</span>
+      </div>
+  
+      <!-- Email -->
+      <div class="flex items-center">
+        <span class="w-32 font-medium text-gray-700">Email:</span>
+        <span class="text-gray-900" id="profile-email">john@example.com</span>
+      </div>
+  
+      <!-- Role -->
+      <div class="flex items-center">
+        <span class="w-32 font-medium text-gray-700">Role:</span>
+        <span class="px-2 py-1 text-sm rounded-full text-white bg-indigo-500" id="profile-role">Donor</span>
+      </div>
+    </div>
+  </div>
+{% endblock content %}

@@ -1,0 +1,47 @@
+{% block  content %}
+<div class="max-w-xl mx-auto bg-white shadow-md rounded-lg p-6 mt-10">
+    <h2 class="text-2xl font-semibold text-blue-600 mb-6">Edit Profile</h2>
+  
+    <form method="POST" action="{% url 'update_profile' %}" class="space-y-5">
+      {% csrf_token %}
+  
+      <!-- Name -->
+      <div>
+        <label for="name" class="block text-gray-700 font-medium">Name</label>
+        <input type="text" id="name" name="name" value="{{ user.name }}" class="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-blue-500" required>
+      </div>
+  
+      <!-- Email (readonly) -->
+      <div>
+        <label for="email" class="block text-gray-700 font-medium">Email</label>
+        <input type="email" id="email" name="email" value="{{ user.email }}" readonly class="w-full mt-1 p-2 border rounded-md bg-gray-100 text-gray-500 cursor-not-allowed">
+      </div>
+  
+      <!-- Role (readonly badge style) -->
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Role</label>
+        <span class="inline-block px-3 py-1 bg-indigo-500 text-white text-sm rounded-full">{{ user.role|title }}</span>
+      </div>
+  
+      <!-- Contact (Donor or Recipient) -->
+      {% if user.role == 'donor' %}
+        <div>
+          <label for="contact" class="block text-gray-700 font-medium">Contact</label>
+          <input type="text" id="contact" name="donor_profile.contact" value="{{ user.donor_profile.contact }}" class="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-blue-500">
+        </div>
+      {% elif user.role == 'recipient' %}
+        <div>
+          <label for="contact" class="block text-gray-700 font-medium">Contact</label>
+          <input type="text" id="contact" name="recipient_profile.contact" value="{{ user.recipient_profile.contact }}" class="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-blue-500">
+        </div>
+      {% endif %}
+  
+      <!-- Submit Button -->
+      <div class="pt-4">
+        <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">Update Profile</button>
+      </div>
+    </form>
+  </div>
+  
+
+{% endblock content %}

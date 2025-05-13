@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Donation</title>
+</head>
+<body>
+    <h2>Donation Form</h2>
+    <form id="donationForm" action='/FoodBridge/donations/donate/'>
+        <label for="food_type">Food Type:</label>
+        <input type="text" id="food_type" name="food_type" required>
+        <br>
+        <label for="shelf_type">Shelf Type (optional):</label>
+        <input type="text" id="shelf_type" name="shelf_type">
+        <br>
+        <label for="quantity">Quantity:</label>
+        <input type="number" id="quantity" name="quantity" step="0.1" required>
+        <br>
+        <label for="contact_phone">Contact Phone:</label>
+        <input type="tel" id="contact_phone" name="contact_phone" required>
+        <br>
+        <label for="expiry_date">Expiry Date:</label>
+        <input type="date" id="expiry_date" name="expiry_date" required>
+        <br>
+        <label for="available">Available:</label>
+        <input type="checkbox" id="available" name="available">
+        <br>
+        <button type="submit">Donate</button>
+    </form>
+    {% comment %} <script>
+        document.getElementById('donationForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            fetch('/FoodBridge/donations/donations/', {
+                method: 'POST',
+                body: JSON.stringify({
+                    food_type: formData.get('food_type'),
+                    shelf_type: formData.get('shelf_type'),
+                    quantity: formData.get('quantity'),
+                    contact_phone: formData.get('contact_phone'),
+                    expiry_date: formData.get('expiry_date'),
+                    available: formData.get('available') === 'on'
+                }),
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Token ' + localStorage.getItem('token') // Assuming token is stored
+                }
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.id) {
+                      alert('Donation submitted successfully!');
+                  } else {
+                      alert('Error: ' + data.message);
+                  }
+              })
+              .catch(error => alert('Error: ' + error));
+        });
+    </script> {% endcomment %}
+</body>
+</html>

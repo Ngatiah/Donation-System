@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FoodBridge Web Application</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="w-20 md:w-64 bg-white shadow-md p-4">
+            <div class="text-blue-600 font-bold text-lg mb-6">Food<span class="text-gray-800">Bridge</span></div>
+            <nav class="space-y-6">
+                <a href="#" class="flex items-center text-blue-500 font-semibold">
+                    <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M3 12l7-8 7 8v6a1 1 0 01-1 1h-4v-4H8v4H4a1 1 0 01-1-1v-6z"/></svg>
+                    <span class="hidden md:inline">Home</span>
+                </a>
+                <a href="#" class="flex items-center text-blue-500 font-semibold">
+                    <!-- User Icon -->
+                    <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 10a4 4 0 100-8 4 4 0 000 8zm-6 8a6 6 0 1112 0H4z" />
+                    </svg>
+                    <span class="hidden md:inline">Profile</span>
+                </a>
+                <a href="#" class="flex items-center text-blue-500 font-semibold">
+                    <!-- History Icon (Clock) -->
+                    <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-8.75V6a.75.75 0 00-1.5 0v4.25c0 .414.336.75.75.75h3a.75.75 0 000-1.5H10.75z" clip-rule="evenodd" />
+                    </svg>
+                    <span class="hidden md:inline">History</span>
+                </a>
+                <a href="#" class="flex items-center text-blue-500 font-semibold">
+                    <!-- Logout Icon -->
+                    <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 4.5A1.5 1.5 0 014.5 3h5a1.5 1.5 0 010 3h-5A1.5 1.5 0 013 4.5zm11.22 4.28a.75.75 0 011.06 0l2.5 2.5a.75.75 0 010 1.06l-2.5 2.5a.75.75 0 11-1.06-1.06l1.72-1.72H7a.75.75 0 010-1.5h8.94l-1.72-1.72a.75.75 0 010-1.06z" clip-rule="evenodd" />
+                    </svg>
+                    <span class="hidden md:inline">Logout</span>
+                </a> 
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-6 overflow-auto">
+            <!-- Top Bar -->
+            <div class="flex items-center w-full justify-between">
+                <input type="text" placeholder="Search campaign, donor, and more..." class="w-full max-w-md p-2 border rounded" />
+                
+                <div class="flex items-center space-x-4 ml-4">
+                  <!-- Only show button if Donor -->
+                  <button class="bg-blue-600 text-white px-4 py-2 rounded hidden recipient:hidden block">New Donation</button>
+              
+                  <!-- Avatar Dropdown -->
+                  <div class="relative group">
+                    <img src="https://via.placeholder.com/40" alt="Avatar" class="w-10 h-10 rounded-full cursor-pointer" />
+                    <div class="absolute right-0 mt-2 w-48 bg-white border rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
+                      <a href="#" class="block px-4 py-2 text-sm hover:bg-gray-100">Profile</a>
+                      <a href="#" class="block px-4 py-2 text-sm hover:bg-gray-100">Switch Role</a>
+                      <a href="#" class="block px-4 py-2 text-sm hover:bg-gray-100">Logout</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+
+              
+              
+
+           
+        </main>
+    </div>
+</body>
+</html>

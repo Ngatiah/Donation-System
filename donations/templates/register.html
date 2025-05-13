@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+</head>
+<body>
+    <h2>Register</h2>
+    <form id="registerForm" action='/FoodBridge/donations/register/'>
+        <label for="name">Full Name:</label>
+        <input type="text" id="name" name="name" required>
+        <br>
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required>
+        <br>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+        <br>
+        <label for="role">Role:</label>
+        <select id="role" name="role" required>
+            <option value="donor">Donor</option>
+            <option value="recipient">Recipient</option>
+        </select>
+        <br>
+        <button type="submit">Register</button>
+    </form>
+    {% comment %} <script>
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            fetch('/FoodBridge/donations/register/', {
+                method: 'POST',
+                body: JSON.stringify({
+                    name: formData.get('name'),
+                    email: formData.get('email'),
+                    password: formData.get('password'),
+                    role: formData.get('role')
+                }),
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.email) {
+                      alert('Registration successful!');
+                      window.location.href = '/login'; // Redirect to login after successful registration
+                  } else {
+                      alert('Error: ' + data.message);
+                  }
+              })
+              .catch(error => alert('Error: ' + error));
+        });
+    </script> {% endcomment %}
+</body>
+</html>

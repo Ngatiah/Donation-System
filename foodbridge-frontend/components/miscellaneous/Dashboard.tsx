@@ -1,0 +1,170 @@
+import React from 'react';
+import CustomAvatar from '../UI/Avatar'
+import {ChevronDown,Plus} from 'lucide-react'
+import { Link } from 'react-router-dom';
+import {DropdownMenu,DropdownMenuItem,DropdownMenuContent,DropdownMenuTrigger} from '../UI/DropdownMenu'
+
+const Dashboard : React.FC = () => {
+  return (
+    
+    <main className="flex-1 p-6 overflow-auto">
+        {/* <!-- Top Bar --> */}
+        <div className="flex items-center w-full justify-end">
+            
+            <div className="flex items-center space-x-4 ml-4">
+            <Link to="/donate">
+              <button className="bg-blue-600 text-white px-4 py-2 rounded">New Donation<span className="ml-2 items-center flex"><Plus className='h-8 w-8'/></span>
+              </button>
+            </Link>
+
+              {/* <!-- Avatar Dropdown --> */}
+              <div className="relative group flex flex-cols">
+                <CustomAvatar/>
+                <DropdownMenu >
+                    <DropdownMenuTrigger>
+                            <ChevronDown className='h-8 w-8 px-1'/>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                        <DropdownMenuItem>
+                            Recipient
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+                
+              </div>
+            </div>
+          </div>
+
+      {/* <!-- Donations --> */}
+      <section className="mb-8">
+          <h2 className="text-3xl/10 font-bold mb-4 text-left px-2">Your Donations</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+             
+              {/*  donations uploaded with their status*/}
+              <div className="grid grid-cols-1 md:grid-cols-3 col-span-3">
+              <div className="bg-white p-4 rounded shadow text-left m-2">
+                  <img src="../../public/images/download (1).jpeg" alt="donated-img" className="rounded-md mb-2 w-full"/>
+                  <h3 className="font-semibold">Maize</h3>
+                  <div className="text-sm text-gray-600 mb-2 font-medium">Imara Daima</div>
+                  <div className="text-sm">Quantity: <strong>150,512kg</strong></div>
+                  <button className="mt-2 bg-blue-500 text-white px-3 py-1 rounded text-sm">Pending</button>
+              </div>
+              <div className="bg-white p-4 rounded shadow text-left m-2">
+                  <img src="/images/download (1).jpeg" alt="donated-img" className="rounded-md mb-2 w-full"/>
+                  <h3 className="font-semibold">Maize</h3>
+                  <div className="text-sm text-gray-600 mb-2 font-medium">Imara Daima</div>
+                  <div className="text-sm">Quantity: <strong>150,512kg</strong></div>
+                  <button className="mt-2 bg-blue-500 text-white px-3 py-1 rounded text-sm">Pending</button>
+              </div>
+              <div className="bg-white p-4 rounded shadow text-left m-2">
+                  <img src="/images/download (1).jpeg" alt="donated-img" className="rounded-md mb-2 w-full"/>
+                  <h3 className="font-semibold">Maize</h3>
+                  <div className="text-sm text-gray-600 mb-2 font-medium">Imara Daima</div>
+                  <div className="text-sm">Quantity: <strong>150,512kg</strong></div>
+                  <button className="mt-2 bg-blue-500 text-white px-3 py-1 rounded text-sm">Pending</button>
+              </div>
+              <div className="bg-white p-4 rounded shadow text-left m-2">
+                  <img src="/images/download (1).jpeg" alt="donated-img" className="rounded-md mb-2 w-full"/>
+                  <h3 className="font-semibold">Maize</h3>
+                  <div className="text-sm text-gray-600 mb-2 font-medium">Imara Daima</div>
+                  <div className="text-sm">Quantity: <strong>150,512kg</strong></div>
+                  <button className="mt-2 bg-blue-500 text-white px-3 py-1 rounded text-sm">Pending</button>
+              </div>
+              </div>
+
+               {/* recipients list */}
+              <div className="p-4 col-span-1">                              
+              <h3 className="font-semibold mb-2">Top Recipients</h3>
+              <ul className="space-y-2">
+                  {/* <li className="flex justify-between border border-gray-200 p-4 items-center">
+                      <CustomAvatar/>
+                      <span>Mark Bernardo</span><span>$15,210</span>
+                  </li> */}
+                  <li className="flex justify-between items-center p-4 rounded border border-gray-200">
+                      <CustomAvatar/>
+                      <span className='text-base p-2'>Mark Bernado</span>
+                      <span className='text-base p-2'>15,200kg</span>
+                  </li>
+                  <li className="flex justify-between items-center p-4 rounded border border-gray-200">
+                      <CustomAvatar/>
+                      <span className='text-base p-2'>Willamina Fleming</span>
+                      <span className='text-base p-2'>14,400kg</span>
+                  </li>
+                  {/* <!-- Add more --> */}
+                  {/* <ListCard/>
+                  <ListCard/> */}
+              </ul>
+              </div>
+              
+          </div>
+      </section>
+
+      {/* <!-- Statistics and Donors --> */}
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* <!-- Statistics Chart --> */}
+          <div className="bg-white p-4 rounded shadow col-span-2">
+              <h3 className="font-semibold mb-2">Statistics</h3>
+              <div className="h-48 bg-gray-200 flex items-center justify-center">[Chart Placeholder]</div>
+        
+          </div>
+
+          {/* total donations with their statuses */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 col-span-1">
+          <div className="bg-white p-4 rounded shadow text-left">
+                  {/* <img src="../../public/images/download (1).jpeg" alt="donated-img" className="rounded-md mb-2 w-full"/> */}
+                  <h3 className="font-semibold">Maize</h3>
+                  <div className="text-sm text-gray-600 mb-2 font-medium">Imara Daima</div>
+                  <div className="text-sm">Quantity: <strong>150,512kg</strong></div>
+                  <button className="mt-2 bg-blue-500 text-white px-3 py-1 rounded text-sm">Pending</button>
+              </div>
+              <div className="bg-white p-4 rounded shadow text-left">
+                  {/* <img src="../../public/images/download (1).jpeg" alt="donated-img" className="rounded-md mb-2 w-full"/> */}
+                  <h3 className="font-semibold">Maize</h3>
+                  <div className="text-sm text-gray-600 mb-2 font-medium">Imara Daima</div>
+                  <div className="text-sm">Quantity: <strong>150,512kg</strong></div>
+                  <button className="mt-2 bg-blue-500 text-white px-3 py-1 rounded text-sm">Pending</button>
+              </div>
+              <div className="bg-white p-4 rounded shadow text-left">
+                  {/* <img src="../../public/images/download (1).jpeg" alt="donated-img" className="rounded-md mb-2 w-full"/> */}
+                  <h3 className="font-semibold">Maize</h3>
+                  <div className="text-sm text-gray-600 mb-2 font-medium">Imara Daima</div>
+                  <div className="text-sm">Quantity: <strong>150,512kg</strong></div>
+                  <button className="mt-2 bg-blue-500 text-white px-3 py-1 rounded text-sm">Pending</button>
+              </div>
+              <div className="bg-white p-4 rounded shadow text-left">
+                  {/* <img src="../../public/images/download (1).jpeg" alt="donated-img" className="rounded-md mb-2 w-full"/> */}
+                  <h3 className="font-semibold">Maize</h3>
+                  <div className="text-sm text-gray-600 mb-2 font-medium">Imara Daima</div>
+                  <div className="text-sm">Quantity: <strong>150,512kg</strong></div>
+                  <button className="mt-2 bg-blue-500 text-white px-3 py-1 rounded text-sm">Pending</button>
+              </div>
+              
+          </div>
+      </section>
+
+      {/* <!-- Summary --> */}
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+          <div className="bg-white p-4 rounded shadow text-center">
+              <h4 className="text-sm text-gray-500">Total Donation</h4>
+              <p className="text-lg font-bold">$1,214,501</p>
+          </div>
+          <div className="bg-white p-4 rounded shadow text-center">
+              <h4 className="text-sm text-gray-500">Donation Today</h4>
+              <p className="text-lg font-bold">$7,925</p>
+          </div>
+          <div className="bg-white p-4 rounded shadow text-center">
+              <h4 className="text-sm text-gray-500">Total Donor</h4>
+              <p className="text-lg font-bold">2,581</p>
+          </div>
+          <div className="bg-white p-4 rounded shadow text-center">
+              <h4 className="text-sm text-gray-500">Average Donation</h4>
+              <p className="text-lg font-bold">$285.56</p>
+          </div>
+      </section>
+ 
+    </main>
+// </div>
+  );
+};
+
+export default Dashboard;

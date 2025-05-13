@@ -1,0 +1,159 @@
+import {useAuthStore} from '../../../store/authStore';
+
+export async function signUp({
+  name,
+  email,
+  password,
+  role,
+  food_type,       
+  quantity,
+  contact_phone
+} : {
+  name: string,
+  email:string,
+  password:string,
+  role:string,
+  food_type?:string,       
+  quantity?:number,
+  contact_phone:string 
+}) {
+  try {
+    const res = await fetch("http://localhost:8003/FoodBridge/donations/register/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({name,email,password,role,food_type,quantity,contact_phone}),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      return { success: false, error: data?.detail || "Signup failed" };
+    }
+
+    return { success: true };
+  } catch (err) {
+    console.log(err);
+    
+    return { success: false, error: "An error occurred during sign up" };
+  }
+}
+
+
+export async function signInWithCredentials({
+  email,
+  password,
+}: {
+  email: string;
+  password: string;
+}) {
+  try {
+    const res = await fetch("http://localhost:8003/FoodBridge/donations/login/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password }),
+      credentials: "include", // or use token-based headers
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      return { success: false, error: data?.detail || "Invalid credentials" };
+    }if (typeof data.token !== 'string') {
+      return { success: false, error: "Invalid token received" };
+    }
+    // handling sessions using Knox
+    const setToken = useAuthStore.getState().setToken;
+    setToken(data.token)
+
+    return { success: true };
+  } catch (err) {
+    console.log(err);
+    
+    return { success: false, error: "An error occurred during sign in" };
+  }
+}
+
+export async function postDonations(data: any, token: string | null) {
+  try {
+    const res = await fetch("http://localhost:8003/FoodBridge/donations/create-donations/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Token ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+
+    const resData = await res.json();
+
+    if (!res.ok) {
+      return { success: false, error: resData?.detail || "Donation failed" };
+    }
+
+    return { success: true };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: "An error occurred during donation" };
+  }
+}
+
+
+export async function editProfile({
+  name,
+  contact_phone,
+  food_type,
+  quantity,
+  role,
+  available,
+} : {
+  name : string,
+  contact_phone : string,
+  food_type?: string,
+  quantity : number,
+  role : "donor" | 'recipient',
+  available : boolean,
+}, token: string | null)  {
+  try {
+    const payload =
+      role === "donor"
+        ? {
+            donor_profile: {
+              name,
+              contact_phone,
+              available,
+            },
+          }
+        : {
+            recipient_profile: {
+              name,
+              contact_phone,
+              food_type,
+              quantity,
+              available,
+            },
+          };
+    const res = await fetch("http://localhost:8003/FoodBridge/donations/edit-profile/", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Token ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const resData = await res.json();
+
+    if (!res.ok) {
+      return { success: false, error: resData?.detail || "Profile update failed" };
+    }
+
+    return { success: true };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: "An error occurred during profile update" };
+  }
+}
