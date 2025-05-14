@@ -28,20 +28,11 @@
 import React, { useEffect, useState } from 'react';
 import EditProfileForm from '../UI/forms/EditProfileForm';
 import { editProfileSchema } from '../lib/validation';
-import { editProfile } from '../lib/actions/auth';
+import { editProfile } from '../lib/actions/profile';
 import { useAuthStore } from '../../store/authStore';
 import {z} from 'zod'
 
 type ProfileFormData = z.infer<typeof editProfileSchema>;
-// type ProfileFormData = {
-//   name: string;
-//   contact_phone: string;
-//   food_type: string;
-//   quantity: number;
-//   role: 'donor' | 'recipient';
-//   available: boolean;
-// };
-
 
 const EditProfile: React.FC = () => {
   const token = useAuthStore((state) => state.token);

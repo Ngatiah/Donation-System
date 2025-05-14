@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
-from .models import Donor,Recipient,DonationMatch,Donation
+from .models import Donor,Recipient,DonationMatch,Donation,Availability
 # from rest_framework.response import Response
 # from rest_framework import status
 from phonenumber_field.serializerfields import PhoneNumberField
@@ -18,6 +18,14 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id','name','email')
 
+class AvailabilitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Availability
+        fields = ['id','day_of_week']
+        # fields = [
+        #     'id', 'specific_date', 'start_date', 'end_date',
+        #     'day_of_week', 'available_from', 'available_until'
+        # ]
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -25,7 +33,6 @@ class RegisterSerializer(serializers.ModelSerializer):
     required_food_type = serializers.CharField(required=True, allow_blank=True)
     required_quantity = serializers.IntegerField(required=False)
     contact_phone = PhoneNumberField(required=True)
-
 
     class Meta:
         model = User
@@ -79,9 +86,45 @@ class LoginSerializer(serializers.Serializer):
 
 class DonationSerializer(serializers.ModelSerializer):
     donor_name = serializers.CharField(source='user.name', read_only=True)
+    food_description = serializers.SerializerMethodField()
+    availability = AvailabilitySerializer(many=True,required=False)
     class Meta:
         model = Donation
         fields = ['food_type','food_description', 'quantity','expiry_date','available','donor_name']
+
+    def get_food_description(self, obj):
+        # Safe default logic
+        if not obj.food_description:
+            return "No description provided."
+
+        # Custom formatting logic (you can adjust this)
+        desc = obj.food_description.strip().capitalize()
+        if len(desc) < 10:
+            return f"{desc} (Too short — please provide more detail.)"
+
+        return desc
+    
+    def create(self, validated_data):
+        availability_data = validated_data.pop('availability', [])
+        donation = Donation.objects.create(**validated_data)
+        for avail in availability_data:
+            availability = Availability.objects.create(**avail)
+            donation.availability.add(availability)
+        return donation
+
+    def update(self, instance, validated_data):
+        availability_data = validated_data.pop('availability', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if availability_data is not None:
+            instance.availability.clear()
+            for avail in availability_data:
+                availability = Availability.objects.create(**avail)
+                instance.availability.add(availability)
+
+        return instance
 
 
 class DonorSerializer(serializers.ModelSerializer):

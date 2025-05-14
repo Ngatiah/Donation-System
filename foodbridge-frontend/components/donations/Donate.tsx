@@ -1,7 +1,7 @@
 import React from 'react'
 import DonationForm from '../UI/forms/DonationForm';
 import {donationSchema} from '../lib/validation'
-import {postDonations} from '../lib/actions/auth'
+import {postDonations} from '../lib/actions/donations'
 import { useAuthStore } from '../../store/authStore';
 
 export default function Donate() {

@@ -1,15 +1,14 @@
 from knox.auth import TokenAuthentication
 from rest_framework import generics
-from .serializers import UserSerializer,RegisterSerializer,LoginSerializer,DonationSerializer,ProfileSerializer,DonationHistorySerializer,DonorSerializer,RecipientSerializer
+from .serializers import UserSerializer,RegisterSerializer,LoginSerializer,DonationSerializer,ProfileSerializer,DonationHistorySerializer,DonorSerializer,RecipientSerializer,AvailabilitySerializer
 from rest_framework.response import Response
 from django.utils import timezone
 from rest_framework.throttling import UserRateThrottle
 import pandas as pd
-from django.db.models import Q
 # from django.db import transaction
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.views import APIView
-from .models import Donor,Recipient,DonationMatch,Donation
+from .models import Donor,Recipient,DonationMatch,Donation,Availability
 from rest_framework import status
 from knox.models import AuthToken
 from knox.views import LogoutView as KnoxLogoutView
@@ -21,6 +20,7 @@ from django.utils.http import http_date
 from datetime import datetime, timedelta
 from django.contrib.auth import get_user_model
 import logging
+from .constants import TIME_RANGES
 from django.http import JsonResponse
 from rest_framework.decorators import api_view
 import joblib
@@ -36,9 +36,9 @@ User = get_user_model()
 def get_matching_models():
     base_path = os.path.join(settings.BASE_DIR, 'models')
 
-    model_path = os.path.join(base_path, 'match_model2.pkl')
-    food_encoder_path = os.path.join(base_path, 'food_encoder.pkl')
-    urgency_encoder_path = os.path.join(base_path, 'urgency_encoder.pkl')
+    model_path = os.path.join(base_path, 'match_model_finale.pkl')
+    food_encoder_path = os.path.join(base_path, 'food_encoder_finale.pkl')
+    urgency_encoder_path = os.path.join(base_path, 'urgency_encoder_finale.pkl')
 
     if not all(os.path.exists(p) for p in [model_path, food_encoder_path, urgency_encoder_path]):
         raise FileNotFoundError("One or more model files not found in 'models/' directory")
@@ -46,6 +46,8 @@ def get_matching_models():
     rf_model = joblib.load(model_path)
     le_food = joblib.load(food_encoder_path)
     urgency_encoder = joblib.load(urgency_encoder_path)
+    print("LE_FOOD CLASSES:", le_food.classes_)
+
 
     return rf_model, le_food, urgency_encoder
 
@@ -255,20 +257,29 @@ class DonationsMatch(APIView):
                 }, status=400)
 
             # Step 4: Get all valid donor candidates
-            donors = Donor.objects.filter(available=True).exclude(lat__isnull=True, lng__isnull=True)
+            # donors = Donor.objects.filter(available=True).exclude(lat__isnull=True, lng__isnull=True)
+            donations = Donation.objects.filter(
+            available=True,
+            quantity__gte=required_quantity,
+            expiry_date__gte=timezone.now().date(),
+            donor__lat__isnull=False,
+            donor__lng__isnull=False
+            ).filter(
+                Q(food_type__icontains=recipient_food) | Q(food_type__iexact=recipient_food)
+            )
 
             match_inputs = []
             donor_map = []
 
-            for donor in donors:
-                donor_food = donor.food_type.strip().lower()
+            for donation in donations:
+                donor = donation.donor
                 try:
-                    donor_food_encoded = le_food.transform([donor_food])[0]
+                    donation_food_encoded = le_food.transform([donation.food_type.strip().lower()])[0]
                 except ValueError:
-                    continue  # skip if donor's food type wasn't in training
+                    continue
 
-                food_match = int(recipient_food_encoded == donor_food_encoded)
-                quantity_match = int(donor.quantity >= required_quantity)
+                food_match = int(recipient_food_encoded == donation_food_encoded)
+                quantity_match = int(donation.quantity >= required_quantity)
                 distance_km = geodesic((recipient_lat, recipient_lng), (donor.lat, donor.lng)).km
 
                 match_inputs.append({
@@ -276,10 +287,11 @@ class DonationsMatch(APIView):
                     'quantity_match': quantity_match,
                     'distance': distance_km
                 })
-                donor_map.append(donor)
+                donor_map.append((donation, donor))
 
-            if not match_inputs:
-                return Response({"message": "No matching donors found."}, status=404)
+
+                if not match_inputs:
+                 return Response({"message": "No matching donors found."}, status=404)
 
             # Step 5: Model prediction
             df = pd.DataFrame(match_inputs)
@@ -287,22 +299,22 @@ class DonationsMatch(APIView):
 
             # Step 6: Save and return matched donors
             matched_donors = []
-            for pred, donor in zip(predictions, donor_map):
+
+            for pred, (donation, donor) in zip(predictions, donor_map):
                 if pred == 1:
-                    # Save the match
                     DonationMatch.objects.create(
                         donor=donor,
                         recipient=recipient,
-                        food_type=donor.food_type,
+                        food_type=donation.food_type,
                         matched_quantity=required_quantity,
-                        food_description=f"Auto-matched donation for {recipient.user.name}",
+                        expiry_date=donation.expiry_date,
+                        food_description=donation.food_description or f"Auto-matched donation from {donor.user.name}",
                         pickup_time=timezone.now() + timedelta(hours=2)
                     )
-                    # matched_donors.append(DonationSerializer(donor).data)
                     matched_donors.append(DonorSerializer(donor).data)
 
-            if not matched_donors:
-                return Response({'message': 'No suitable donors matched by the AI model.'}, status=204)
+                    if not matched_donors:
+                        return Response({'message': 'No suitable donors matched by the AI model.'}, status=204)
 
             return Response({'matches': matched_donors}, status=200)
 
@@ -311,12 +323,12 @@ class DonationsMatch(APIView):
             return Response({'error': str(e)}, status=500)
 
 
-
 class DonationOptions(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated]
     def get(self, request):
-        _, le_food = get_matching_models()  # Only need the label encoder for food
+        _, le_food ,_= get_matching_models()  # Only need the label encoder for food
         food_types = list(le_food.classes_)  # Get all known food types from the model
+        print("Supported food types in view:", food_types)
         return Response({'required_food_types': food_types})
 
 
@@ -345,5 +357,25 @@ def switch_role(request):
 def generate_reports():
     pass
 
+class TimeRangeOptionsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        formatted = [
+            {
+                "label": f"{start[:-3]} – {end[:-3]}",
+                "from": start,
+                "until": end
+            }
+            for start, end in TIME_RANGES
+        ]
+        return Response(formatted)
 
 
+class AvailabilityListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        availabilities = Availability.objects.all()
+        serializer = AvailabilitySerializer(availabilities, many=True)
+        return Response(serializer.data)

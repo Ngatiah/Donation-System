@@ -3,12 +3,15 @@ export const FIELD_TYPES = {
     email: "email",
     password: "password",
     food_type : "text",
-    shelf_type : "text",
+    // shelf_type : "text",
     quantity : "number",
     contact_phone : "tel",
     expiry_date : "date",
-    available : "checkbox",
-    role : "radio"
+    availability : "text",
+    role : "radio",
+    food_description: "text", 
+    time_range: "text", 
+
 };
 
 export const FIELD_NAMES = {
@@ -16,12 +19,15 @@ export const FIELD_NAMES = {
     email: "Email",
     password: "Password",
     food_type : "Food Type",
-    shelf_type : "Shelf TYpe",
+    // shelf_type : "Shelf Type",
     quantity : "Quantity",
     contact_phone : "Contact Phone",
     expiry_date : "Expiry Date",
-    available : "Available",
-    role : "Role"
+    availability : "Availability",
+    role : "Role",
+    food_description: "Food Description",
+    time_range: "Preferred Time Slot",
+
 };
 
   

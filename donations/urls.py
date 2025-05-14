@@ -1,6 +1,6 @@
 # urls.py
 from django.urls import path
-from .views import UserLogin,UserRegistration,DonationsMatch,UserLogout,UserProfile,switch_role,Dashboard,DonationOptions,CreateOrListDonation,EditProfile
+from .views import UserLogin,UserRegistration,DonationsMatch,UserLogout,UserProfile,switch_role,Dashboard,DonationOptions,CreateOrListDonation,EditProfile,AvailabilityListView,TimeRangeOptionsView
 
 urlpatterns = [
     path('', Dashboard.as_view(), name='home'),
@@ -13,4 +13,7 @@ urlpatterns = [
     path('view-profile/', UserProfile.as_view(), name='view-profile'),
     path('edit-profile/', EditProfile.as_view(), name='edit-profile'),
     path('switch-role/', switch_role, name='switch-role'),
+    path('availabilities/', AvailabilityListView.as_view(), name='availability-list'),
+    path('time-range-options/', TimeRangeOptionsView.as_view(), name='time-range-options'),
+
 ]
