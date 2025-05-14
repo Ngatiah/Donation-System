@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
-from .models import Donor,Recipient,DonationMatch
+from .models import Donor,Recipient,DonationMatch,Donation
 # from rest_framework.response import Response
 # from rest_framework import status
 from phonenumber_field.serializerfields import PhoneNumberField
@@ -79,35 +79,52 @@ class LoginSerializer(serializers.Serializer):
 
 class DonationSerializer(serializers.ModelSerializer):
     donor_name = serializers.CharField(source='user.name', read_only=True)
-    # recipient_name = serializers.CharField(source='user.name', read_only=True)
     class Meta:
-        model = DonationMatch
-        fields = ['food_type', 'shelf_type', 'quantity', 'contact_phone', 'expiry_date', 'lat', 'lng', 'available','donor_name']
+        model = Donation
+        fields = ['food_type','food_description', 'quantity','expiry_date','available','donor_name']
 
 
-class MatchedDonorSerializer(serializers.ModelSerializer):
+class DonorSerializer(serializers.ModelSerializer):
+    role = serializers.SerializerMethodField()
     donor_name = serializers.CharField(source='user.name', read_only=True)
     email = serializers.CharField(source='user.email', read_only=True)
     contact_phone = PhoneNumberField(required=True)
 
     class Meta:
         model = Donor
-        fields = ['donor_name', 'email', 'contact_phone', 'lat','lng','city']
+        fields = ['donor_name','email','contact_phone','lat','lng','city','role']
+    
+    def get_role(self, obj):
+        user = obj.user
+        if hasattr(user, 'is_donor') and user.is_donor:
+            return 'donor'
+        elif hasattr(user, 'is_recipient') and user.is_recipient:
+            return 'recipient'
+        return 'unknown'
 
 
 class RecipientSerializer(serializers.ModelSerializer):
+    role = serializers.SerializerMethodField()
     recipient_name = serializers.CharField(source='user.name', read_only=True)
     email = serializers.CharField(source='user.email', read_only=True)
     contact_phone = PhoneNumberField(required=True)
 
     class Meta:
         model = Recipient
-        fields = ['recipient_name', 'email','contact_phone', 'lat', 'lng','city']
+        fields = ['recipient_name', 'email','contact_phone', 'lat', 'lng','city','role']
+
+    def get_role(self, obj):
+        user = obj.user
+        if hasattr(user, 'is_recipient') and user.is_recipient:
+            return 'recipient'
+        elif hasattr(user, 'is_donor') and user.is_donor:
+            return 'donor'
+        return 'unknown'
 
 
 class DonationHistorySerializer(serializers.ModelSerializer):
     # donor = DonationSerializer(read_only=True)
-    donor_name = MatchedDonorSerializer(source="donor.user.name",read_only=True)
+    donor_name = DonorSerializer(source="donor.user.name",read_only=True)
     recipient_name = serializers.CharField(source='recipient.user.name', read_only=True)
 
     class Meta:
@@ -130,7 +147,7 @@ class ProfileSerializer(serializers.Serializer):
     contact_phone = serializers.SerializerMethodField()
     required_food_type = serializers.SerializerMethodField()
     required_quantity = serializers.SerializerMethodField()
-    donor_profile = MatchedDonorSerializer(required=False, allow_null=True)
+    donor_profile = DonorSerializer(required=False, allow_null=True)
     recipient_profile = RecipientSerializer(required=False, allow_null=True)
 
     def get_user(self, obj):
@@ -172,9 +189,9 @@ class ProfileSerializer(serializers.Serializer):
         if user.is_donor:
             donor_data = validated_data.get('donor_profile')
             if hasattr(user, 'donor_profile'):
-                donor_serializer = MatchedDonorSerializer(user.donor_profile, data=donor_data, partial=True)
+                donor_serializer = DonorSerializer(user.donor_profile, data=donor_data, partial=True)
             else:
-                donor_serializer = MatchedDonorSerializer(data={**donor_data, "user": user.id})
+                donor_serializer = DonorSerializer(data={**donor_data, "user": user.id})
             donor_serializer.is_valid(raise_exception=True)
             donor_serializer.save(user=user)
 

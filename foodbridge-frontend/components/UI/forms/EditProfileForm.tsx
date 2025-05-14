@@ -59,7 +59,6 @@ import type{
       "contact_phone",
       "food_type",
       "quantity",
-      "role",
       "available",
     ] as const;
   
@@ -76,8 +75,8 @@ import type{
 
     const r = form.watch("role" as Path<T>) as Role;
     const visibleFields = r === "donor"
-    ? ["name", "contact_phone", "available","role"]
-    : ["name", "contact_phone", "food_type", "quantity", "available","role"];
+    ? ["name", "contact_phone", "available"]
+    : ["name", "contact_phone", "food_type", "quantity", "available"];
 
     return (
       <div className="flex flex-col gap-4">
@@ -104,7 +103,8 @@ import type{
                         <DropdownMenu>
                           <DropdownMenuTrigger>
                             <button className="form-input flex justify-between items-center">
-                              {field.value || "Select"}
+                              {/* {field.value || "Select"} */}
+                              {field.value}
                               <ChevronDown className="h-4 w-4 ml-2" />
                             </button>
                           </DropdownMenuTrigger>
@@ -133,10 +133,16 @@ import type{
                   </FormItem>
                 )}
               />
+              
             ))}
   
+            <div className="text-gray-600 text-sm capitalize">
+            <strong>Role:</strong> {r}
+           </div>
+
+
             <Button type="submit" className="form-btn">
-              Donate
+              Update Profile
             </Button>
           </form>
         </Form>

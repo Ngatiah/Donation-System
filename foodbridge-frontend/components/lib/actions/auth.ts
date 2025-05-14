@@ -157,3 +157,28 @@ export async function editProfile({
     return { success: false, error: "An error occurred during profile update" };
   }
 }
+
+
+export async function logout(token:string | null) {
+  try {
+    const res = await fetch("http://localhost:8003/FoodBridge/donations/logout/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Token ${token}`,
+      },
+    });
+
+    const resData = await res.json();
+
+    if (!res.ok) {
+      return { success: false, error: resData?.detail || "Logout failed" };
+    }
+
+    return { success: true };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: "An error occurred during logout" };
+  }
+  
+}

@@ -40,7 +40,7 @@ const DonationsMatch: React.FC = () => {
 
   return (
     <div className="p-4">
-      <h2 className="text-xl font-semibold mb-4">Donor Matches</h2>
+      {/* <h2 className="text-xl font-semibold mb-4">Donor Matches</h2> */}
       {error && <p className="text-red-600">{error}</p>}
       {matches.length === 0 && !error && <p>No matches yet...</p>}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

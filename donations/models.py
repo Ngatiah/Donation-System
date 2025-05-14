@@ -33,6 +33,18 @@ class Recipient(models.Model):
     def __str__(self):
         return f"{self.user.name} needs {self.required_food_type} ({self.required_quantity})"
 
+class Donation(models.Model):
+    donor = models.ForeignKey('Donor', on_delete=models.CASCADE, related_name='donations')
+    food_type = models.CharField(max_length=255)
+    quantity = models.FloatField()
+    expiry_date = models.DateField()
+    available = models.BooleanField(default=True)
+    food_description = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Donation of {self.food_type} ({self.quantity}) by {self.donor.user.name}"
+
 
 class DonationMatch(models.Model):
     donor = models.ForeignKey('Donor', on_delete=models.CASCADE, related_name='matches')

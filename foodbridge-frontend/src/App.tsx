@@ -8,6 +8,10 @@ import Profile from '../components/profile/Profile'
 import EditProfile from '../components/profile/EditProfile'
 import Sidebar from '../components/miscellaneous/Sidebar'
 import DonationForm from '../components/UI/forms/DonationForm'
+import Logout from '../components/auth/logout'
+import DonationHistory from '../components/donations/DonationHistory'
+import DonationsMatch from '../components/donations/DonationsMatch'
+
 
 const App: React.FC = () => {
   const location = useLocation()
@@ -21,6 +25,9 @@ const App: React.FC = () => {
       <Route path="/" element={<Navigate to="/login" />} />
       <Route path="login" element={
           <SignIn/>
+      } />
+      <Route path="logout" element={
+          <Logout/>
       } />
       <Route path="register" element={
           <SignUp />
@@ -36,9 +43,17 @@ const App: React.FC = () => {
         <EditProfile/>
       }/>
 
-    <Route path="donate" element={
-      <DonationForm/>
-    }/>
+      <Route path="donate" element={
+        <DonationForm/>
+      }/>
+
+      <Route path="donation-matches" element={
+          <DonationsMatch/>
+      }/>
+
+      <Route path="donations-history" element={
+            <DonationHistory/>
+      }/>
 
       </Routes>
       </main>

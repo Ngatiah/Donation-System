@@ -1,7 +1,6 @@
-from django.shortcuts import render
 from knox.auth import TokenAuthentication
 from rest_framework import generics
-from .serializers import UserSerializer,RegisterSerializer,LoginSerializer,DonationSerializer,ProfileSerializer,DonationHistorySerializer,MatchedDonorSerializer,RecipientSerializer
+from .serializers import UserSerializer,RegisterSerializer,LoginSerializer,DonationSerializer,ProfileSerializer,DonationHistorySerializer,DonorSerializer,RecipientSerializer
 from rest_framework.response import Response
 from django.utils import timezone
 from rest_framework.throttling import UserRateThrottle
@@ -10,9 +9,8 @@ from django.db.models import Q
 # from django.db import transaction
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.views import APIView
-from .models import Donor,Recipient,DonationMatch
+from .models import Donor,Recipient,DonationMatch,Donation
 from rest_framework import status
-
 from knox.models import AuthToken
 from knox.views import LogoutView as KnoxLogoutView
 from rest_framework.permissions import IsAuthenticated
@@ -33,10 +31,8 @@ from rest_framework.exceptions import NotFound
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
-# rf_model = joblib.load('../models/match_model2.pkl')
-# le_food = joblib.load('../models/food_encoder.pkl')
-# urgency_encoder = joblib.load('../models/urgency_encoder.pkl') 
 
+# retrieving training models this way reduces runtime 
 def get_matching_models():
     base_path = os.path.join(settings.BASE_DIR, 'models')
 
@@ -53,9 +49,12 @@ def get_matching_models():
 
     return rf_model, le_food, urgency_encoder
 
+# greedy algorithm for distances
 def is_nearby(d_lat, d_lng, r_lat, r_lng, max_km=50):
     return geodesic((d_lat, d_lng), (r_lat, r_lng)).km <= max_km
 
+
+# role based specification
 def apply_role(user, role: str):
     if role == 'donor':
         user.is_donor = True
@@ -145,40 +144,42 @@ class UserLogout(KnoxLogoutView):
         response.delete_cookie('auth_token')  # 👈 Clear the cookie from client
         return response
 
-
 class Dashboard(APIView):
-    # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
+
     def get(self, request):
         user = request.user
         role = user.role
 
         if role == 'donor':
-            # .select_related reduces number of db hits
             try:
                 donor = Donor.objects.select_related('user').get(user=user)
-            except Recipient.DoesNotExist:
+            except Donor.DoesNotExist:
                 raise NotFound("Donor profile not found.")
-            # donor = Donor.objects.get(user=user)
-            # matches = DonationMatch.objects.filter(donor=donor).order_by('-created_at')
-            matches = DonationMatch.objects.filter(donor=donor).select_related('recipient__user','donor__user')
+
+            # Donations uploaded by this donor
+            donations = Donation.objects.filter(donor=donor).order_by('-created_at')
+
+            # Matches made for this donor
+            matches = DonationMatch.objects.filter(donor=donor).select_related('recipient__user', 'donor__user').order_by('-created_at')
+
             data = {
-                "profile": MatchedDonorSerializer(donor).data,
-                "matches": DonationHistorySerializer(matches, many=True).data
+                "profile": DonorSerializer(donor).data,
+                "uploaded_donations": DonationSerializer(donations, many=True).data,
+                "matches": DonationHistorySerializer(matches, many=True).data,
             }
 
         elif role == 'recipient':
-            # recipient = Recipient.objects.get(user=user)
-            # matches = DonationMatch.objects.filter(recipient=recipient).order_by('-created_at')
             try:
                 recipient = Recipient.objects.select_related('user').get(user=user)
             except Recipient.DoesNotExist:
                 raise NotFound("Recipient profile not found.")
-            matches = DonationMatch.objects.filter(recipient=recipient).select_related('recipient__user', 'donor__user')
+
+            matches = DonationMatch.objects.filter(recipient=recipient).select_related('recipient__user', 'donor__user').order_by('-created_at')
 
             data = {
                 "profile": RecipientSerializer(recipient).data,
-                "matches": DonationHistorySerializer(matches, many=True).data
+                "matches": DonationHistorySerializer(matches, many=True).data,
             }
 
         else:
@@ -191,7 +192,6 @@ class UserProfile(generics.RetrieveAPIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = ProfileSerializer
-    # queryset = UserProfile.objects.all()
     def get_object(self):
         return self.request.user
 
@@ -206,13 +206,21 @@ class EditProfile(generics.RetrieveUpdateAPIView):
      return self.partial_update(request, *args, **kwargs)
 
 
-class CreateDonation(generics.CreateAPIView):
+class CreateOrListDonation(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = DonationSerializer
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+    def get(self, request):
+        donations = Donation.objects.filter(user=request.user)
+        serializer = DonationSerializer(donations, many=True)
+        return Response(serializer.data)
 
+    def post(self, request):
+        serializer = DonationSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class DonationsMatch(APIView):
     serializer_class = DonationSerializer
@@ -291,7 +299,7 @@ class DonationsMatch(APIView):
                         pickup_time=timezone.now() + timedelta(hours=2)
                     )
                     # matched_donors.append(DonationSerializer(donor).data)
-                    matched_donors.append(MatchedDonorSerializer(donor).data)
+                    matched_donors.append(DonorSerializer(donor).data)
 
             if not matched_donors:
                 return Response({'message': 'No suitable donors matched by the AI model.'}, status=204)
@@ -322,13 +330,6 @@ class DonationsHistory(generics.ListAPIView):
         return DonationMatch.objects.filter(
         Q(donor__user=user) | Q(recipient__user=user)
         ).select_related('donor__user', 'recipient__user')
-
-        # return DonationMatch.objects.filter(
-        #     donor__user=user
-        # ) | DonationMatch.objects.filter(
-        #     recipient__user=user
-        # )
-    
 
 
 @api_view(['POST'])

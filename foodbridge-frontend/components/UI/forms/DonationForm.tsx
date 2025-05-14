@@ -97,7 +97,8 @@ function DonationForm<T extends FieldValues>({
                       <DropdownMenu>
                         <DropdownMenuTrigger>
                           <button className="form-input flex justify-between items-center">
-                            {field.value || "Select"}
+                            {/* {field.value || "Select"} */}
+                            {field.value}
                             <ChevronDown className="h-4 w-4 ml-2" />
                           </button>
                         </DropdownMenuTrigger>
