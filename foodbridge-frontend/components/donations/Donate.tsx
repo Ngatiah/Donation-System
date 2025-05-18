@@ -6,6 +6,7 @@ import { donationSchema } from '../lib/validation';
 
 const Donate : React.FC = ()=> {
   const token = useAuthStore(state=>state.token)
+  console.log("Donation Schema:", donationSchema); 
   return (
     <DonationForm
     schema={donationSchema}

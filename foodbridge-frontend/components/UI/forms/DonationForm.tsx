@@ -25,12 +25,12 @@ import { Input } from "../Input";
 import { Button } from "../Button";
 import { FIELD_NAMES, FIELD_TYPES } from "../../constants";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {ZodTypeAny} from 'zod'
+import {ZodSchema} from 'zod'
 
 
 interface Props {
-  // schema: ZodSchema;
-  schema: ZodTypeAny;
+  schema: ZodSchema;
+  // schema: ZodTypeAny;
   // schema: ZodType<DonationFormData>;
   defaultValues: DonationFormData;
   onSubmit: (data: DonationFormData) => Promise<{ success: boolean; error?: string }>;
@@ -157,7 +157,7 @@ function DonationForm({
                                     ? field.value.label
                                     : "Select Time Range"}
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent className="min-w-[200px] max-h-60 overflow-auto rounded-lg shadow-lg bg-white text-black p-2">
+                      <DropdownMenuContent className="min-w-[200px] max-h-60 overflow-auto rounded-lg shadow-lg bg-white text-black p-2"  style={{ position: 'absolute', top: '100%', left: 0, display: 'block' }}>
                         {loadingTimeRanges ? (
                           <DropdownMenuItem disabled className="py-3 px-4 text-base">
                             Loading...

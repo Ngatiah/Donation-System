@@ -7,7 +7,7 @@ import SignIn from '../components/auth/login'
 import Profile from '../components/profile/Profile'
 import EditProfile from '../components/profile/EditProfile'
 import Sidebar from '../components/miscellaneous/Sidebar'
-import DonationForm from '../components/UI/forms/DonationForm'
+import Donate from '../components/donations/Donate'
 import Logout from '../components/auth/logout'
 import DonationHistory from '../components/donations/DonationHistory'
 import DonationsMatch from '../components/donations/DonationsMatch'
@@ -44,7 +44,7 @@ const App: React.FC = () => {
       }/>
 
       <Route path="donate" element={
-        <DonationForm/>
+        <Donate/>
       }/>
 
       <Route path="donation-matches" element={
