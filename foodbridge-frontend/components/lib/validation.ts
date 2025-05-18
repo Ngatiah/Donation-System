@@ -63,39 +63,44 @@ export const signInSchema = z.object({
 
 
 export const donationSchema = z.object({
-  food_type: z.string().optional(),
+  food_type: z.string().default(""),
+  food_description: z.string().default(""),
   quantity: z.preprocess(
-      (val) => {
-        if (typeof val === "string") {
-          return parseInt(val, 10);
-        }
-        return val;
-      },
-      z.number().optional().refine((val) => val === undefined || val >= 0, {
-        message: "Quantity must be a positive number",
-      })
-    ),    
-    available : z.boolean(),
-    expiry_date : z.date()
+  (val) => (typeof val === "string" ? parseInt(val, 10) : val),
+  z.number().min(0, "Quantity must be a positive number")
+),
+  expiry_date: z.coerce.date(),
+  time_range: z.object({
+    from: z.string(),
+    until: z.string(),
+    label: z.string().min(1, "Please select a time range"),
+
+  }),
+});
+
+export type DonationFormData = z.infer<typeof donationSchema>;
 
 
-})
 
 export const editProfileSchema = z.object({
   name: z.string().min(3, "Name is required"),
   role: z.enum(["donor", "recipient"]).optional(),
   food_type: z.string().optional(),
-  quantity: z.preprocess(
-      (val) => {
-        if (typeof val === "string") {
-          return parseInt(val, 10);
-        }
-        return val;
-      },
-      z.number().optional().refine((val) => val === undefined || val >= 0, {
-        message: "Quantity must be a positive number",
-      })
-    ),    
+  // quantity: z.preprocess(
+  //     (val) => {
+  //       if (typeof val === "string") {
+  //         return parseInt(val, 10);
+  //       }
+  //       return val;
+  //     },
+  //     z.number().optional().refine((val) => val === undefined || val >= 0, {
+  //       message: "Quantity must be a positive number",
+  //     })
+  //   ),    
+  quantity : z.preprocess(
+  (val) => val === undefined ? 0 : typeof val === "string" ? parseInt(val, 10) : val,
+  z.number().min(0)
+  ),
   contact_phone: z
     .string()
     .min(9, "Phone number must be at least 9 characters long")

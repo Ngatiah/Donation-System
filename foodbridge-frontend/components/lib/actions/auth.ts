@@ -23,7 +23,14 @@ export async function signUp({
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({name,email,password,role,food_type,quantity,contact_phone}),
+      body: JSON.stringify({
+        name,
+        email,
+        password,
+        role,
+        required_food_type: food_type,
+        required_quantity: quantity,    
+        contact_phone}),
     });
 
     const data = await res.json();

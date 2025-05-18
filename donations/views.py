@@ -76,8 +76,11 @@ class UserRegistration(generics.CreateAPIView):
     authentication_classes = [TokenAuthentication]
     def post(self,request,*args,**kwargs):
             # FIRST CHECK : IF USER exists with that email
-            if User.objects.filter(email=request.data.get("email")).exists():
-             return Response({"error": "User with this email already exists."}, status=400)
+            email = request.data.get("email", "").lower()
+            if User.objects.filter(email=email).exists():
+            #  return Response({"error": "User with this email already exists."}, status=400)
+             return Response({"error": "User with this email already exists."}, status=status.HTTP_400_BAD_REQUEST)
+
             
             # validating user
             serializer = self.get_serializer(data=request.data)
@@ -168,7 +171,9 @@ class Dashboard(APIView):
             data = {
                 "profile": DonorSerializer(donor).data,
                 "uploaded_donations": DonationSerializer(donations, many=True).data,
-                "matches": DonationHistorySerializer(matches, many=True).data,
+                # "matches": DonationHistorySerializer(matches, many=True).data,
+                "matches": matches
+
             }
 
         elif role == 'recipient':
@@ -181,7 +186,9 @@ class Dashboard(APIView):
 
             data = {
                 "profile": RecipientSerializer(recipient).data,
-                "matches": DonationHistorySerializer(matches, many=True).data,
+                # "matches": DonationHistorySerializer(matches, many=True).data,
+                "matches": matches
+
             }
 
         else:
@@ -213,16 +220,22 @@ class CreateOrListDonation(APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = DonationSerializer
     def get(self, request):
-        donations = Donation.objects.filter(user=request.user)
+        donations = Donation.objects.filter(donor__user=request.user)
         serializer = DonationSerializer(donations, many=True)
         return Response(serializer.data)
 
     def post(self, request):
+        # Get the donor profile for the current user
+        try:
+            donor = Donor.objects.get(user=request.user)
+        except Donor.DoesNotExist:
+            return Response({'detail': 'Donor profile not found.'}, status=status.HTTP_400_BAD_REQUEST)
         serializer = DonationSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(user=request.user)
+            serializer.save(donor=donor)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
 
 class DonationsMatch(APIView):
     serializer_class = DonationSerializer
@@ -230,7 +243,7 @@ class DonationsMatch(APIView):
     # ensures ai enpoint not spammed/overused
     throttle_classes = [UserRateThrottle]
     def post(self, request):
-        rf_model, le_food = get_matching_models()
+        rf_model, le_food, _= get_matching_models()
         try:
             # Step 1: Retrieve recipient profile
             user = request.user
@@ -290,8 +303,9 @@ class DonationsMatch(APIView):
                 donor_map.append((donation, donor))
 
 
-                if not match_inputs:
-                 return Response({"message": "No matching donors found."}, status=404)
+            if not match_inputs:
+             return Response({"message": "No donations currently available for matching."}, status=404)
+
 
             # Step 5: Model prediction
             df = pd.DataFrame(match_inputs)
@@ -309,12 +323,12 @@ class DonationsMatch(APIView):
                         matched_quantity=required_quantity,
                         expiry_date=donation.expiry_date,
                         food_description=donation.food_description or f"Auto-matched donation from {donor.user.name}",
-                        pickup_time=timezone.now() + timedelta(hours=2)
+                        # pickup_time=timezone.now() + timedelta(hours=2)
                     )
                     matched_donors.append(DonorSerializer(donor).data)
 
-                    if not matched_donors:
-                        return Response({'message': 'No suitable donors matched by the AI model.'}, status=204)
+            if not matched_donors:
+              return Response({'message': 'No suitable donors matched by the AI model.'}, status=204)
 
             return Response({'matches': matched_donors}, status=200)
 
@@ -325,6 +339,8 @@ class DonationsMatch(APIView):
 
 class DonationOptions(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated]
+     # ensures ai enpoint not spammed/overused
+    throttle_classes = [UserRateThrottle]
     def get(self, request):
         _, le_food ,_= get_matching_models()  # Only need the label encoder for food
         food_types = list(le_food.classes_)  # Get all known food types from the model

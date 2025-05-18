@@ -14,7 +14,6 @@ export async function postDonations(data: any, token: string | null) {
       if (!res.ok) {
         return { success: false, error: resData?.detail || "Donation failed" };
       }
-  
       return { success: true };
     } catch (err) {
       console.error(err);

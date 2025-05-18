@@ -8,9 +8,6 @@ from django.core.exceptions import ValidationError
 
 # Create your models here.
 class Availability(models.Model):
-    # specific_date = models.DateField(null=True, blank=True)  # Exact date availability
-    # start_date = models.DateField(null=True, blank=True)     # Range start
-    # end_date = models.DateField(null=True, blank=True)       # Range end
 
     day_of_week = models.CharField(
         max_length=10,
@@ -27,6 +24,9 @@ class Availability(models.Model):
         blank=True  # Optional to support more precise availability
     )
 
+    # specific_date = models.DateField(null=True, blank=True)  # Exact date availability
+    # start_date = models.DateField(null=True, blank=True)     # Range start
+    # end_date = models.DateField(null=True, blank=True)       # Range end
     # available_from = models.TimeField()
     # available_until = models.TimeField()
 
@@ -44,8 +44,10 @@ class Availability(models.Model):
         # return f"Available from {self.available_from} to {self.available_until}"
     
     def clean(self):
-        if not any([self.specific_date, (self.start_date and self.end_date), self.day_of_week]):
-            raise ValidationError("You must specify either a specific date, a date range, or a day of the week.")
+        if not self.day_of_week:
+            raise ValidationError("You must specify a day of the week.")
+        # if not any([self.specific_date, (self.start_date and self.end_date), self.day_of_week]):
+        #     raise ValidationError("You must specify either a specific date, a date range, or a day of the week.")
 
 
 
@@ -80,7 +82,7 @@ class Donation(models.Model):
     food_type = models.CharField(max_length=255)
     quantity = models.FloatField()
     expiry_date = models.DateField()
-    available = models.BooleanField(default=True)
+    # available = models.BooleanField(default=True)
     food_description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     availability = models.ManyToManyField('Availability', blank=True, related_name='donation_availabilities')

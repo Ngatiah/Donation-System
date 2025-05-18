@@ -13,19 +13,35 @@ class UserSerializer(serializers.ModelSerializer):
     """
     name = serializers.CharField(read_only=True)
     email = serializers.CharField(read_only=True)
+    # role = serializers.CharField(read_only=True)
+
 
     class Meta:
         model = User
         fields = ('id','name','email')
 
+# class AvailabilitySerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Availability
+#         fields = ['id','day_of_week']
+# #         # fields = [
+# #         #     'id', 'specific_date', 'start_date', 'end_date',
+# #         #     'day_of_week', 'available_from', 'available_until'
+# #         # ]
+
 class AvailabilitySerializer(serializers.ModelSerializer):
+    label = serializers.SerializerMethodField()
+    value = serializers.CharField(source='day_of_week')
+
     class Meta:
         model = Availability
-        fields = ['id','day_of_week']
-        # fields = [
-        #     'id', 'specific_date', 'start_date', 'end_date',
-        #     'day_of_week', 'available_from', 'available_until'
-        # ]
+        fields = ['id', 'label', 'value']
+
+    def get_label(self, obj):
+        return obj.day_of_week.capitalize()
+    def get_value(self, obj):
+     return obj.day_of_week.lower()
+
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -43,6 +59,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         contact_phone = validated_data.pop('contact_phone', None)
         required_food_type = validated_data.pop('required_food_type', None)
         required_quantity = validated_data.pop('required_quantity', 0)
+        password = validated_data.pop('password')
+
 
         # Set role flags
         if role == 'donor':
@@ -55,7 +73,11 @@ class RegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Invalid role. Must be 'donor' or 'recipient'.")
 
         # Create the user first
-        user = User.objects.create_user(**validated_data)
+        # user = User.objects.create_user(**validated_data)
+        user = User(**validated_data)
+        user.set_password(password)
+        user.save()
+
 
         # Then create the role-specific profile
         if user.is_donor:
@@ -67,7 +89,6 @@ class RegisterSerializer(serializers.ModelSerializer):
                 required_food_type=required_food_type,
                 required_quantity=required_quantity
             )
-
         return user
 
 
@@ -85,12 +106,12 @@ class LoginSerializer(serializers.Serializer):
 
 
 class DonationSerializer(serializers.ModelSerializer):
-    donor_name = serializers.CharField(source='user.name', read_only=True)
+    donor_name = serializers.CharField(read_only=True)
     food_description = serializers.SerializerMethodField()
     availability = AvailabilitySerializer(many=True,required=False)
     class Meta:
         model = Donation
-        fields = ['food_type','food_description', 'quantity','expiry_date','available','donor_name']
+        fields = ['food_type','food_description', 'quantity','expiry_date','availability','donor_name']
 
     def get_food_description(self, obj):
         # Safe default logic
@@ -144,6 +165,14 @@ class DonorSerializer(serializers.ModelSerializer):
         elif hasattr(user, 'is_recipient') and user.is_recipient:
             return 'recipient'
         return 'unknown'
+    # def get_role(self, obj):
+    #     user = obj.user
+    #     if getattr(user, 'is_donor', False):
+    #         return 'donor'
+    #     if getattr(user, 'is_recipient', False):
+    #         return 'recipient'
+    #     return 'unknown'
+
 
 
 class RecipientSerializer(serializers.ModelSerializer):
@@ -163,6 +192,14 @@ class RecipientSerializer(serializers.ModelSerializer):
         elif hasattr(user, 'is_donor') and user.is_donor:
             return 'donor'
         return 'unknown'
+    # def get_role(self, obj):
+    #     user = obj.user
+    #     if getattr(user, 'is_donor', False):
+    #         return 'donor'
+    #     if getattr(user, 'is_recipient', False):
+    #         return 'recipient'
+    #     return 'unknown'
+
 
 
 class DonationHistorySerializer(serializers.ModelSerializer):

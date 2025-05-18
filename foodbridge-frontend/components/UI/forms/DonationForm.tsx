@@ -1,17 +1,18 @@
 import type{
   DefaultValues,
-  FieldValues,
+  // FieldValues,
   Path,
   SubmitHandler,
   UseFormReturn,
 } from "react-hook-form";
 import {useForm } from 'react-hook-form'
-import { ZodType } from "zod";
+// import { ZodType } from "zod";
 import {DropdownMenu,DropdownMenuItem,DropdownMenuContent,DropdownMenuTrigger} from '../DropdownMenu'
 import { useNavigate } from "react-router-dom";
 import { useDonationOptions } from "../../hooks/useDonationOptions";
 import { useTimeRangeOptions } from "../../hooks/useTimeRange";
-import { useAvailabilityOptions } from "../../hooks/useAvailability";
+// import { useAvailabilityOptions } from "../../hooks/useAvailability";
+import { DonationFormData } from "../../lib/validation";
 import {
   Form,
   FormControl,
@@ -24,34 +25,41 @@ import { Input } from "../Input";
 import { Button } from "../Button";
 import { FIELD_NAMES, FIELD_TYPES } from "../../constants";
 import { zodResolver } from "@hookform/resolvers/zod";
+import {ZodTypeAny} from 'zod'
 
-interface Props<T extends FieldValues> {
-  schema: ZodType<T>;
-  defaultValues: T;
-  onSubmit: (data: T) => Promise<{ success: boolean; error?: string }>;
+
+interface Props {
+  // schema: ZodSchema;
+  schema: ZodTypeAny;
+  // schema: ZodType<DonationFormData>;
+  defaultValues: DonationFormData;
+  onSubmit: (data: DonationFormData) => Promise<{ success: boolean; error?: string }>;
 }
 
-function DonationForm<T extends FieldValues>({
+function DonationForm({
   schema,
   defaultValues,
   onSubmit,
-}: Props<T>) {
+}: Props) {
   const navigate = useNavigate();
-  const form: UseFormReturn<T> = useForm<T>({
+  const form: UseFormReturn<DonationFormData> = useForm<DonationFormData>({
     resolver: zodResolver(schema),
-    defaultValues: defaultValues as DefaultValues<T>,
+    // defaultValues: defaultValues as DefaultValues<DonationFormData>,
+    defaultValues,
+
   }); 
+
 
   const {foodTypes,loading} = useDonationOptions()
   const {timeRangeOptions,loadingTimeRanges} = useTimeRangeOptions();
-  const {availabilityOptions,loadingAvailability} = useAvailabilityOptions()
+  // const {availabilityOptions,loadingAvailability} = useAvailabilityOptions()
 
   
-  const handleSubmit: SubmitHandler<T> = async (data) => {
+  const handleSubmit: SubmitHandler<DonationFormData> = async (data) => {
     console.log("FORM DATA", data);
     const result = await onSubmit(data);
     if (result.success) {
-      navigate("/view-profile");
+      navigate("/home");
     } else {
       console.error(result.error);
     }
@@ -62,7 +70,7 @@ function DonationForm<T extends FieldValues>({
     "food_type",
     "quantity",
     "expiry_date",
-    "availability",
+    // "availability",
     "time_range",
     "food_description", 
   ] as const;
@@ -93,10 +101,10 @@ function DonationForm<T extends FieldValues>({
             <FormField
               key={fieldName}
               control={form.control}
-              name={fieldName as Path<T>}
+              name={fieldName as Path<DonationFormData>}
               render={({ field }) => (
                 <FormItem>
-                 {fieldName !== "food_type" && fieldName !== "time_range" && fieldName !== "availability" && (
+                 {fieldName !== "food_type" && fieldName !== "time_range" && (
                     <FormLabel className="capitalize">
                       {donationFieldNames[fieldName as keyof typeof donationFieldNames]}
                     </FormLabel>
@@ -107,7 +115,10 @@ function DonationForm<T extends FieldValues>({
                         <DropdownMenuTrigger 
                         aria-label="Select food type"
                         className="border border-gray-400 rounded min-w-[400px] max-h-60">
-                          {field.value || "Select Food Type"}
+                          {typeof field.value === "string" && field.value
+                                            ? field.value
+                                            : "Select Food Type"}
+                          {/* {field.value || "Select Food Type"} */}
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="min-w-[200px] max-h-60 overflow-auto rounded-lg shadow-lg bg-white text-black p-2">
                           {loading ? (
@@ -130,6 +141,7 @@ function DonationForm<T extends FieldValues>({
                     ) : fieldName === "food_description" ? (
                       <textarea
                         {...field}
+                        value={typeof field.value === "string" ? field.value : ""}
                         rows={4}
                         className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Enter a brief description of the food..."
@@ -140,7 +152,10 @@ function DonationForm<T extends FieldValues>({
                         aria-label="Select time slot"
                         className="border border-gray-400 rounded min-w-[400px] max-h-60"
                       >
-                        {field.value?.label || "Select Time Range"}
+                        {/* {field.value?.label ?? "Select Time Range"} */}
+                        {typeof field.value === "object" && field.value !== null && "label" in field.value
+                                    ? field.value.label
+                                    : "Select Time Range"}
                       </DropdownMenuTrigger>
                       <DropdownMenuContent className="min-w-[200px] max-h-60 overflow-auto rounded-lg shadow-lg bg-white text-black p-2">
                         {loadingTimeRanges ? (
@@ -160,39 +175,19 @@ function DonationForm<T extends FieldValues>({
                         )}
                       </DropdownMenuContent>
                     </DropdownMenu>
-                    ) :fieldName === 'availability' ? (
-                      <DropdownMenu>
-                      <DropdownMenuTrigger 
-                        aria-label="Select available day"
-                        className="border border-gray-400 rounded min-w-[400px] max-h-60"
-                      >
-                        {field.value?.label || "Select Available day"}
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="min-w-[200px] max-h-60 overflow-auto rounded-lg shadow-lg bg-white text-black p-2">
-                        {loadingAvailability ? (
-                          <DropdownMenuItem disabled className="py-3 px-4 text-base">
-                            Loading...
-                          </DropdownMenuItem>
-                        ) : (
-                          availabilityOptions.map((option) => (
-                            <DropdownMenuItem
-                              key={option.from}
-                              onSelect={() => field.onChange(option)}
-                              className="py-3 px-4 text-base hover:bg-gray-100 cursor-pointer text-gray-600"
-                            >
-                              {option.label}
-                            </DropdownMenuItem>
-                          ))
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
                     ) 
                     :(
                       <Input
                         required
+                        // value={field.value ?? ""}
+                        value={typeof field.value === "object" ? "" : field.value ?? ""}
+                        name={field.name}
                         type={donationFieldTypes[fieldName]}
-                        {...field}
+                        // {...field}
                         className="form-input"
+                        onChange={field.onChange}
+                        // onBlur={field.onBlur}
+                        // ref={field.ref}
                       />
                     )}
                   </FormControl>

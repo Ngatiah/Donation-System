@@ -70,7 +70,8 @@ const Dashboard : React.FC = () => {
            let donationData: Donation[] = [];
 
             // If the role is donor, fetch their donations
-            if (profileData?.profile?.user?.role === 'donor') {
+            // if (profileData?.profile?.user?.role === 'donor') {
+                if (profileData?.profile?.role === 'donor') {
                 const donorRes = await fetch("http://localhost:8003/FoodBridge/donations/create-donations/", {
                 method: "GET",
                 headers: {
@@ -99,7 +100,8 @@ const Dashboard : React.FC = () => {
        fetchDashboardData();
      }, [token]);
    
-     if (loading) return <div>Loading dashboard...</div>;
+    //  if (loading) return <div>Loading dashboard...</div>;
+    if (loading) return <div className="animate-pulse text-gray-500">Loading dashboard...</div>
      if (error) return <div>Error: {error}</div>;
      if (!dashData) return null;
      
@@ -154,6 +156,7 @@ const Dashboard : React.FC = () => {
                 <img src="/images/download (1).jpeg" alt="donated-img" className="rounded-md mb-2 w-full" />
                 <h3 className="font-semibold">{donation.food_type}</h3>
                 <div className="text-sm">Quantity: <strong>{donation.quantity}</strong></div>
+                <div className="text-sm">Expires: <strong>{new Date(donation.expiry_date).toLocaleDateString()}</strong></div>
                 <button className="mt-2 bg-blue-500 text-white px-3 py-1 rounded text-sm">Pending</button>
             </div>
             ))}
@@ -162,12 +165,11 @@ const Dashboard : React.FC = () => {
             <div key={i} className="bg-white p-4 rounded shadow text-left">
                 <img src="/images/download (1).jpeg" alt="donated-img" className="rounded-md mb-2 w-full" />
                 <h3 className="font-semibold">{match.food_type}</h3>
-                <div className="text-sm">Quantity: <strong>{match.donor_name}</strong></div>
+                <div className="text-sm">Donor: <strong>{match.donor_name}</strong></div>
                 <div className="text-sm">Quantity: <strong>{match.matched_quantity}</strong></div>
                 <button className="mt-2 bg-blue-500 text-white px-3 py-1 rounded text-sm">Pending</button>
             </div>
             ))}
-
             </div>
 
                {/* recipients list */}
