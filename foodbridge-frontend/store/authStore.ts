@@ -4,11 +4,13 @@ import { persist } from 'zustand/middleware';
 interface AuthState {
   token: string | null;
   profilePic: string | null;
+  // hydrated: boolean;
   viewedProfileUsername: string | null;
   setToken: (token: string) => void;
   setProfilePic: (profilePic: string | null) => void;
   setViewedProfileUsername: (viewedProfileUsername: string | null) => void;
   clearAuth: () => void;
+  // markHydrated: () => void;
 
 }
 
@@ -16,16 +18,24 @@ const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       token: null,
-      profilePic: null,
+      profilePic: null,  
+      // hydrated :false,
       viewedProfileUsername: null,
       setToken: (token) => set({ token }),
       setProfilePic: (profilePic) => set({ profilePic }),
       setViewedProfileUsername: (viewedProfileUsername) => set({ viewedProfileUsername }),
       clearAuth: () =>
         set({ token: null,  profilePic: null, viewedProfileUsername: null }),
+      // markHydrated: () => set({ hydrated: true }),
     }),
     {
       name: 'auth',
+      // onRehydrateStorage: () => (state) => {
+      //   if (state) {
+      //     // hydration completed
+      //     useAuthStore.getState().markHydrated();
+      //   }
+      // },
     }
   )
 );

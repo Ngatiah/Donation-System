@@ -12,6 +12,7 @@ import {Link} from 'react-router-dom'
 import {toast} from '../../hooks/use-toast'
 import { useNavigate } from "react-router-dom";
 import {PhoneInput} from '../PhoneInput'
+import {DropdownMenu,DropdownMenuItem,DropdownMenuContent,DropdownMenuTrigger} from '../DropdownMenu'
 import {
   Form,
   FormControl,
@@ -24,6 +25,10 @@ import { Input } from "../Input";
 import { Button } from "../Button";
 import { FIELD_NAMES, FIELD_TYPES } from "../../constants";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useDonationOptions } from "../../hooks/useDonationOptions";
+import { useCity } from "../../hooks/useCity";
+
+
 interface Props<T extends FieldValues> {
   schema: ZodType<T>;
   defaultValues: T;
@@ -46,6 +51,9 @@ function AuthForm<T extends FieldValues>({
     defaultValues: defaultValues as DefaultValues<T>,
   });
   const role = form.watch('role' as Path<T>) as Role;
+  const {foodTypes,loading} = useDonationOptions()
+  const { cities, loadingCities } = useCity();
+
 
   const handleSubmit: SubmitHandler<T> = async (data) => {
     console.log("FORM DATA", data);
@@ -102,9 +110,12 @@ function AuthForm<T extends FieldValues>({
               render={({ field }) => {
                 return (
                   <FormItem>
-                    <FormLabel className="capitalize">
+                   {field.name !== 'food_type' && field.name !== 'city' && <FormLabel className="capitalize">
                       {FIELD_NAMES[field.name as keyof typeof FIELD_NAMES]}
-                    </FormLabel>
+                    </FormLabel>}
+                   {/* <FormLabel className="capitalize">
+                      {FIELD_NAMES[field.name as keyof typeof FIELD_NAMES]}
+                    </FormLabel> */}
                     <FormControl>
                     {field.name === 'contact_phone' ? (
                         <PhoneInput
@@ -115,7 +126,67 @@ function AuthForm<T extends FieldValues>({
                             field.onChange(val);
                           }}
                         />
-                      ) : (
+                      ) 
+                      : field.name === "food_type" ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger 
+                        aria-label="Select food type"
+                        className="border border-gray-400 rounded min-w-[400px] max-h-60">
+                          {typeof field.value === "string" && field.value
+                                            ? field.value
+                                            : "Select Food Type"}
+                          {/* {field.value || "Select Food Type"} */}
+                         </DropdownMenuTrigger>
+                        
+                        <DropdownMenuContent className="min-w-[200px] max-h-60 overflow-auto rounded-lg shadow-lg bg-white text-black p-2">
+                          {loading ? (
+                            <DropdownMenuItem disabled className="py-3 px-4 text-base">
+                              Loading...
+                            </DropdownMenuItem>
+                          ) : (
+                            foodTypes.map((option) => (
+                              <DropdownMenuItem
+                                key={option}
+                                onSelect={() => field.onChange(option)}
+                                className="py-3 px-4 text-base hover:bg-gray-100 cursor-pointer text-gray-600"
+                              >
+                                {option}
+                              </DropdownMenuItem>
+                            ))
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ) 
+                    : field.name === "city" ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger 
+                        aria-label="Select City"
+                        className="border border-gray-400 rounded min-w-[400px] max-h-60">
+                          {typeof field.value === "string" && field.value
+                                            ? field.value
+                                            : "Select City"}
+                         </DropdownMenuTrigger>
+                        <DropdownMenuContent className="min-w-[200px] max-h-60 overflow-auto rounded-lg shadow-lg bg-white text-black p-2">
+                          {loadingCities ? (
+                            <DropdownMenuItem disabled className="py-3 px-4 text-base">
+                              Loading...
+                            </DropdownMenuItem>
+                          ) : (
+                            cities.map((option) => (
+                              <DropdownMenuItem
+                                key={option}
+                                onSelect={() => field.onChange(option)}
+                                className="py-3 px-4 text-base hover:bg-gray-100 cursor-pointer text-gray-600"
+                              >
+                                {option}
+                              </DropdownMenuItem>
+                            ))
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ) 
+                     :
+                      (
                         <Input
                           required
                           type={FIELD_TYPES[field.name as keyof typeof FIELD_TYPES]}

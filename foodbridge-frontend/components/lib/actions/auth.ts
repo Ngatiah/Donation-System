@@ -7,7 +7,8 @@ export async function signUp({
   role,
   food_type,       
   quantity,
-  contact_phone
+  contact_phone,
+  city
 } : {
   name: string,
   email:string,
@@ -15,7 +16,8 @@ export async function signUp({
   role:string,
   food_type?:string,       
   quantity?:number,
-  contact_phone:string 
+  contact_phone:string,
+  city : string
 }) {
   try {
     const res = await fetch("http://localhost:8003/FoodBridge/donations/register/", {
@@ -30,13 +32,19 @@ export async function signUp({
         role,
         required_food_type: food_type,
         required_quantity: quantity,    
-        contact_phone}),
+        contact_phone,
+        city
+    }),
     });
 
     const data = await res.json();
 
     if (!res.ok) {
       return { success: false, error: data?.detail || "Signup failed" };
+    }
+
+    if (data.token) {
+      useAuthStore.getState().setToken(data.token);
     }
 
     return { success: true };
@@ -46,6 +54,77 @@ export async function signUp({
     return { success: false, error: "An error occurred during sign up" };
   }
 }
+
+// import { fetchFoodTypeOptions } from './food';
+
+// export async function signUp({
+//   name,
+//   email,
+//   password,
+//   role,
+//   food_type,       
+//   quantity,
+//   contact_phone
+// } : {
+//   name: string,
+//   email: string,
+//   password: string,
+//   role: string,
+//   food_type?: string,       
+//   quantity?: number,
+//   contact_phone: string 
+// }) {
+//   try {
+//     // If the role is recipient, validate food_type against donation options
+//     if (role === 'recipient') {
+//       const token = useAuthStore.getState().token;
+//       const res = await fetchFoodTypeOptions(token);
+
+//       if (!res.success) {
+//         return { success: false, error: "Failed to fetch donation options" };
+//       }
+
+//       const validOptions = res.data?.required_food_types || [];
+
+//       if (!food_type || !validOptions.includes(food_type)) {
+//         return {
+//           success: false,
+//           error: `Invalid food type selected. Please choose from: ${validOptions.join(', ')}`,
+//         };
+//       }
+//     }
+
+//     // Proceed with signup
+//     const res = await fetch("http://localhost:8003/FoodBridge/donations/register/", {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//       },
+//       body: JSON.stringify({
+//         name,
+//         email,
+//         password,
+//         role,
+//         required_food_type: food_type,
+//         required_quantity: quantity,    
+//         contact_phone
+//       }),
+//     });
+// // 
+//     const data = await res.json();
+
+//     if (!res.ok) {
+//       return { success: false, error: data?.detail || "Signup failed" };
+//     }
+//     useAuthStore.getState().setToken(data.token); // Store token for future requests
+//     // useAuthStore.getState().setUser(data.user);  
+
+//     return { success: true };
+//   } catch (err) {
+//     console.error(err);
+//     return { success: false, error: "An error occurred during sign up" };
+//   }
+// }
 
 
 export async function signInWithCredentials({
@@ -84,7 +163,71 @@ export async function signInWithCredentials({
   }
 }
 
-export async function logout(token:string | null) {
+// export async function logout(token:string | null) {
+//   try {
+//     const res = await fetch("http://localhost:8003/FoodBridge/donations/logout/", {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//         Authorization: `Token ${token}`,
+//       },
+//     });
+
+//     const resData = await res.json();
+
+//     if (!res.ok) {
+//       return { success: false, error: resData?.detail || "Logout failed" };
+//     }
+
+//     return { success: true };
+//   } catch (err) {
+//     console.error(err);
+//     return { success: false, error: "An error occurred during logout" };
+//   }
+  
+// }
+
+
+// export async function logout(token: string | null) {
+//   try {
+//     const res = await fetch("http://localhost:8003/FoodBridge/donations/logout/", {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//         Authorization: `Token ${token}`,
+//       },
+//     });
+
+//     let resData = null;
+//     const text = await res.text();
+
+//     // Only parse JSON if there is text content
+//     if (text) {
+//       try {
+//         resData = JSON.parse(text);
+//       } catch {
+//         // JSON parsing failed, ignore
+//       }
+//     }
+
+//     if (!res.ok) {
+//       // Use detail if available, otherwise fallback to generic error
+//       return { success: false, error: resData?.detail || `Logout failed with status ${res.status}` };
+//     }
+
+//     return { success: true };
+//   } catch (err) {
+//     console.error(err);
+//     return { success: false, error: "An error occurred during logout" };
+//   }
+// }
+
+interface ErrorResponse {
+  detail?: string;
+  [key: string]: any;  // allow other props too
+}
+
+export async function logout(token: string | null) {
   try {
     const res = await fetch("http://localhost:8003/FoodBridge/donations/logout/", {
       method: "POST",
@@ -94,10 +237,23 @@ export async function logout(token:string | null) {
       },
     });
 
-    const resData = await res.json();
+    let resData: ErrorResponse | null = null;
+    const text = await res.text();
+
+    if (text) {
+      try {
+        resData = JSON.parse(text);
+      } catch {
+        // ignore parse errors
+      }
+    }
 
     if (!res.ok) {
-      return { success: false, error: resData?.detail || "Logout failed" };
+      // Check if resData is an object and has 'detail' property
+      if (resData && typeof resData === "object" && "detail" in resData) {
+        return { success: false, error: resData.detail };
+      }
+      return { success: false, error: `Logout failed with status ${res.status}` };
     }
 
     return { success: true };
@@ -105,5 +261,5 @@ export async function logout(token:string | null) {
     console.error(err);
     return { success: false, error: "An error occurred during logout" };
   }
-  
 }
+

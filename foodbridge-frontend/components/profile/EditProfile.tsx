@@ -36,6 +36,7 @@ type ProfileFormData = z.infer<typeof editProfileSchema>;
 
 const EditProfile: React.FC = () => {
   const token = useAuthStore((state) => state.token);
+  // const token = useAuthStore.getState().token;
   const [defaultValues, setDefaultValues] = useState<ProfileFormData | null>(null);
 
   useEffect(() => {

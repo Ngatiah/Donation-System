@@ -1,4 +1,5 @@
 export async function fetchTimeRangeOptions(token:string | null) {
+    // if(!token) return //wait for token
     try {
       const res = await fetch("http://localhost:8003/FoodBridge/donations/time-range-options/", {
         method: "GET",

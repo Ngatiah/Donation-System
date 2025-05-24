@@ -96,7 +96,7 @@ class DonationMatch(models.Model):
     recipient = models.ForeignKey('Recipient', on_delete=models.CASCADE, related_name='matches')
 
     food_type = models.CharField(max_length=255)
-    shelf_type = models.CharField(max_length=255, blank=True)  # from shelf_map
+    # shelf_type = models.CharField(max_length=255, blank=True)  # from shelf_map
     matched_quantity = models.FloatField()
     expiry_date = models.DateField(
     verbose_name="Expiry Date",
@@ -108,7 +108,19 @@ class DonationMatch(models.Model):
     food_description = models.TextField(blank=True)
     selected_availability = models.ManyToManyField('Availability', blank=True, related_name='match_availabilities')
     created_at = models.DateTimeField(auto_now_add=True)
+    match_score = models.IntegerField(default=0)
 
     def __str__(self):
         return f"Match: {self.donor.user.name} → {self.recipient.user.name} ({self.food_type})"
 
+# class Notifications():
+#     pass
+
+
+# class DonationStatus():
+    #  choices=[
+    #         ('pending', 'Pending'),
+    #         ('accepted', 'Accepted'),
+    #         ('declined', 'Declined'),
+    #     ],
+#     pass

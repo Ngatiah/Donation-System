@@ -4,6 +4,8 @@ import { fetchFoodTypeOptions } from '../lib/actions/food';
 
 export const useDonationOptions = () => {
   const token = useAuthStore(state => state.token);
+  // const token = useAuthStore.getState().token;
+
   const [foodTypes, setFoodTypes] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -24,7 +26,8 @@ export const useDonationOptions = () => {
       }
     };
 
-    if (token) fetchOptions();
+    // if (token) 
+    fetchOptions();
   }, [token]);
 
   return { foodTypes, loading };

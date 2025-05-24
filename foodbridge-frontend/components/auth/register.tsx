@@ -14,7 +14,8 @@ const SignUp : React.FC = () => (
       role : 'donor',
       food_type :'',
       quantity :0,
-      contact_phone:''
+      contact_phone:'',
+      city:''
     }}
     onSubmit={signUp}
     />

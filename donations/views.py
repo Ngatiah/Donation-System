@@ -7,6 +7,7 @@ from rest_framework.throttling import UserRateThrottle
 import pandas as pd
 # from django.db import transaction
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from .models import Donor,Recipient,DonationMatch,Donation,Availability
 from rest_framework import status
@@ -21,35 +22,19 @@ from datetime import datetime, timedelta
 from django.contrib.auth import get_user_model
 import logging
 from .constants import TIME_RANGES
-from django.http import JsonResponse
+# from django.http import JsonResponse
 from rest_framework.decorators import api_view
-import joblib
-import os
+# import joblib
+# import os
+from rest_framework.exceptions import NotFound
 from django.conf import settings
 from geopy.distance import geodesic
 from rest_framework.exceptions import NotFound
+from .matching import get_matching_models
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
 
-# retrieving training models this way reduces runtime 
-def get_matching_models():
-    base_path = os.path.join(settings.BASE_DIR, 'models')
-
-    model_path = os.path.join(base_path, 'match_model_finale.pkl')
-    food_encoder_path = os.path.join(base_path, 'food_encoder_finale.pkl')
-    urgency_encoder_path = os.path.join(base_path, 'urgency_encoder_finale.pkl')
-
-    if not all(os.path.exists(p) for p in [model_path, food_encoder_path, urgency_encoder_path]):
-        raise FileNotFoundError("One or more model files not found in 'models/' directory")
-
-    rf_model = joblib.load(model_path)
-    le_food = joblib.load(food_encoder_path)
-    urgency_encoder = joblib.load(urgency_encoder_path)
-    print("LE_FOOD CLASSES:", le_food.classes_)
-
-
-    return rf_model, le_food, urgency_encoder
 
 # greedy algorithm for distances
 def is_nearby(d_lat, d_lng, r_lat, r_lng, max_km=50):
@@ -67,7 +52,6 @@ def apply_role(user, role: str):
     else:
         raise ValueError("Invalid role")
     user.save()
-
 
 
 # Create your views here.
@@ -149,8 +133,50 @@ class UserLogout(KnoxLogoutView):
         response.delete_cookie('auth_token')  # 👈 Clear the cookie from client
         return response
 
+
+def get_ai_scored_donations(recipient, rf_model, le_food, top_n=5):
+    potential_donations = Donation.objects.filter(
+        quantity__gt=0,
+        expiry_date__gte=timezone.now().date(),
+        donor__lat__isnull=False,
+        donor__lng__isnull=False
+    ).filter(
+        Q(food_type__icontains=recipient.required_food_type) |
+        Q(food_type__iexact=recipient.required_food_type)
+    ).select_related('donor')
+
+    recipient_food_encoded = le_food.transform([recipient.required_food_type.lower()])[0]
+    matches = []
+
+    for donation in potential_donations:
+        donor = donation.donor
+        distance_km = geodesic((recipient.lat, recipient.lng), (donor.lat, donor.lng)).km
+        if distance_km > 50:
+            continue
+
+        try:
+            donation_food_encoded = le_food.transform([donation.food_type.strip().lower()])[0]
+        except ValueError:
+            continue
+
+        features = pd.DataFrame([{
+            'food_match': int(recipient_food_encoded == donation_food_encoded),
+            'quantity_match': int(donation.quantity >= recipient.required_quantity),
+            'distance': distance_km,
+        }])
+
+        score = rf_model.predict_proba(features)[0][1]
+        matches.append((score, donation))
+
+    matches.sort(reverse=True)
+    # return [donation for score, donation in matches[:top_n]]
+    # return [(score, donation) for score, donation in matches[:top_n]]
+    return [donation for score, donation in matches[:top_n]]
+
+
 class Dashboard(APIView):
     permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
 
     def get(self, request):
         user = request.user
@@ -162,18 +188,16 @@ class Dashboard(APIView):
             except Donor.DoesNotExist:
                 raise NotFound("Donor profile not found.")
 
-            # Donations uploaded by this donor
             donations = Donation.objects.filter(donor=donor).order_by('-created_at')
 
-            # Matches made for this donor
-            matches = DonationMatch.objects.filter(donor=donor).select_related('recipient__user', 'donor__user').order_by('-created_at')
+            matches = DonationMatch.objects.filter(donor=donor)\
+                .select_related('recipient__user', 'donor__user')\
+                .order_by('-created_at')
 
             data = {
                 "profile": DonorSerializer(donor).data,
                 "uploaded_donations": DonationSerializer(donations, many=True).data,
-                # "matches": DonationHistorySerializer(matches, many=True).data,
-                "matches": matches
-
+                "matches": DonationHistorySerializer(matches, many=True).data,
             }
 
         elif role == 'recipient':
@@ -182,13 +206,18 @@ class Dashboard(APIView):
             except Recipient.DoesNotExist:
                 raise NotFound("Recipient profile not found.")
 
-            matches = DonationMatch.objects.filter(recipient=recipient).select_related('recipient__user', 'donor__user').order_by('-created_at')
+            # Matches already made
+            matches = DonationMatch.objects.filter(recipient=recipient)\
+                .select_related('recipient__user', 'donor__user')\
+                .order_by('-created_at')
+            
+            rf_model, le_food, _, _ = get_matching_models()
+            ai_donations = get_ai_scored_donations(recipient, rf_model, le_food)
 
             data = {
                 "profile": RecipientSerializer(recipient).data,
-                # "matches": DonationHistorySerializer(matches, many=True).data,
-                "matches": matches
-
+                "available_donations": DonationSerializer(ai_donations, many=True).data,
+                "matches": DonationHistorySerializer(matches, many=True).data,
             }
 
         else:
@@ -215,7 +244,7 @@ class EditProfile(generics.RetrieveUpdateAPIView):
      return self.partial_update(request, *args, **kwargs)
 
 
-class CreateOrListDonation(APIView):
+class CreateOrListDonation(generics.ListCreateAPIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = DonationSerializer
@@ -237,30 +266,27 @@ class CreateOrListDonation(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
+
 class DonationsMatch(APIView):
     serializer_class = DonationSerializer
     permission_classes = [IsAuthenticated]
-    # ensures ai enpoint not spammed/overused
     throttle_classes = [UserRateThrottle]
+
     def post(self, request):
-        rf_model, le_food, _= get_matching_models()
+        rf_model, le_food, _ , _= get_matching_models()
         try:
-            # Step 1: Retrieve recipient profile
             user = request.user
             try:
                 recipient = user.recipient_profile
             except Recipient.DoesNotExist:
                 return Response({'error': 'Recipient profile not found.'}, status=404)
 
-            # Step 2: Input data from request
             data = request.data
-            # recipient_food = data.get('food_type', '').strip().lower()
             recipient_food = data.get('recipient_food_type', '').strip().lower()
             required_quantity = float(data.get('required_quantity', 0))
             recipient_lat = float(data.get('lat', recipient.lat))
             recipient_lng = float(data.get('lng', recipient.lng))
 
-            # Step 3: Encode food type
             try:
                 recipient_food_encoded = le_food.transform([recipient_food])[0]
             except ValueError:
@@ -269,20 +295,15 @@ class DonationsMatch(APIView):
                     'supported_types': list(le_food.classes_)
                 }, status=400)
 
-            # Step 4: Get all valid donor candidates
-            # donors = Donor.objects.filter(available=True).exclude(lat__isnull=True, lng__isnull=True)
             donations = Donation.objects.filter(
-            available=True,
-            quantity__gte=required_quantity,
-            expiry_date__gte=timezone.now().date(),
-            donor__lat__isnull=False,
-            donor__lng__isnull=False
+                quantity__gte=required_quantity,
+                expiry_date__gte=timezone.now().date(),
+                donor__city__iexact=recipient.city
             ).filter(
                 Q(food_type__icontains=recipient_food) | Q(food_type__iexact=recipient_food)
-            )
+            ).select_related('donor')
 
-            match_inputs = []
-            donor_map = []
+            match_inputs,donor_map = [],[]
 
             for donation in donations:
                 donor = donation.donor
@@ -291,9 +312,9 @@ class DonationsMatch(APIView):
                 except ValueError:
                     continue
 
+                distance_km = geodesic((recipient_lat, recipient_lng), (donor.lat, donor.lng)).km
                 food_match = int(recipient_food_encoded == donation_food_encoded)
                 quantity_match = int(donation.quantity >= required_quantity)
-                distance_km = geodesic((recipient_lat, recipient_lng), (donor.lat, donor.lng)).km
 
                 match_inputs.append({
                     'food_match': food_match,
@@ -302,20 +323,22 @@ class DonationsMatch(APIView):
                 })
                 donor_map.append((donation, donor))
 
-
             if not match_inputs:
-             return Response({"message": "No donations currently available for matching."}, status=404)
+                return Response({"message": "No donations currently available for matching."}, status=404)
 
-
-            # Step 5: Model prediction
             df = pd.DataFrame(match_inputs)
             predictions = rf_model.predict(df)
 
-            # Step 6: Save and return matched donors
-            matched_donors = []
 
-            for pred, (donation, donor) in zip(predictions, donor_map):
+            matched_donors = []
+            for pred, (donation, donor),match_input in zip(predictions, donor_map,match_inputs):
                 if pred == 1:
+                    # match_score = int((food_match * 0.4 + quantity_match * 0.3 + max(0, 1 - (distance_km / 50)) * 0.3) * 100)
+                    match_score = int((
+                    match_input['food_match'] * 0.4 +
+                    match_input['quantity_match'] * 0.3 +
+                    max(0, 1 - (match_input['distance'] / 50)) * 0.3
+                ) * 100)
                     DonationMatch.objects.create(
                         donor=donor,
                         recipient=recipient,
@@ -323,12 +346,12 @@ class DonationsMatch(APIView):
                         matched_quantity=required_quantity,
                         expiry_date=donation.expiry_date,
                         food_description=donation.food_description or f"Auto-matched donation from {donor.user.name}",
-                        # pickup_time=timezone.now() + timedelta(hours=2)
+                        match_score=match_score
                     )
                     matched_donors.append(DonorSerializer(donor).data)
 
             if not matched_donors:
-              return Response({'message': 'No suitable donors matched by the AI model.'}, status=204)
+                return Response({'message': 'No suitable donors matched by the AI model.'}, status=204)
 
             return Response({'matches': matched_donors}, status=200)
 
@@ -338,14 +361,24 @@ class DonationsMatch(APIView):
 
 
 class DonationOptions(generics.RetrieveAPIView):
-    permission_classes = [IsAuthenticated]
-     # ensures ai enpoint not spammed/overused
+    # permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
     throttle_classes = [UserRateThrottle]
     def get(self, request):
-        _, le_food ,_= get_matching_models()  # Only need the label encoder for food
+        _, le_food, _, _ = get_matching_models()  # Only need the label encoder for food
         food_types = list(le_food.classes_)  # Get all known food types from the model
         print("Supported food types in view:", food_types)
         return Response({'required_food_types': food_types})
+
+
+class CityOptions(generics.RetrieveAPIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [UserRateThrottle]
+    def get(self, request):
+        _, _ ,cities,_ = get_matching_models()
+        # all_cities = list(cities.classes)  # Get all known cities from the model
+        print("Supported cities in view:",cities )
+        return Response({'cities': cities})
 
 
 # preview donations for both donor and recipients based on role logged in
@@ -369,9 +402,6 @@ def switch_role(request):
     except ValueError as e:
         return Response({"error": str(e)}, status=400)
 
-# donors print their donation reports to show their contributions
-def generate_reports():
-    pass
 
 class TimeRangeOptionsView(APIView):
     permission_classes = [IsAuthenticated]
@@ -395,3 +425,8 @@ class AvailabilityListAPIView(APIView):
         availabilities = Availability.objects.all()
         serializer = AvailabilitySerializer(availabilities, many=True)
         return Response(serializer.data)
+    
+
+# donors print their donation reports to show their contributions
+def generate_reports():
+    pass

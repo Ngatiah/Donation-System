@@ -14,7 +14,9 @@ interface User{
 
 interface Profile{
     user: User;
-    role:string
+    role:string;
+    required_food_type?:string;
+    required_quantity?: number;
 }
 
 interface DonationMatch{
@@ -27,10 +29,9 @@ interface DonationMatch{
 
 interface Donation {
     food_type: string;
-    quantity: string;
-    expiry_date: Date;
-    available: boolean;
-    
+    quantity: number;
+    expiry_date: string;
+    food_description?: string;
 }
 
 interface DashboardData{
@@ -44,64 +45,111 @@ const Dashboard : React.FC = () => {
     const [dashData, setDashData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [noMatchesMessage, setNoMatchesMessage] = useState<string | null>(null);
     const token = useAuthStore(state => state.token);
 
-   useEffect(() => {
-       const fetchDashboardData = async () => {
-         try {
-            // fetch profiles & matches
-           const res = await fetch("http://localhost:8003/FoodBridge/donations/", {
-             method: "GET",
-             headers: {
-               "Content-Type": "application/json",
-               Authorization: `Token ${token}`,
-             },
-           });
-   
-           const profileData = await res.json();
-           console.log("Fetched profileData:", profileData);
+  useEffect(() => {
+  const fetchDashboardData = async () => {
+    try {
+      setError(null);
+      setNoMatchesMessage(null);
+      setLoading(true); 
+      const res = await fetch("http://localhost:8003/FoodBridge/donations/", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Token ${token}`,
+        },
+      });
 
-   
-           if (!res.ok) {
-             setError(profileData?.detail || "Failed to fetch profile and donation matches data");
-             return;
-           }
+      const profileData = await res.json();
+      console.log("Fetched profileData:", profileData);
 
-           let donationData: Donation[] = [];
+      if (!res.ok) {
+        setError(profileData?.detail || "Failed to fetch profile and donation matches data");
+        return;
+      }
 
-            // If the role is donor, fetch their donations
-            // if (profileData?.profile?.user?.role === 'donor') {
-                if (profileData?.profile?.role === 'donor') {
-                const donorRes = await fetch("http://localhost:8003/FoodBridge/donations/create-donations/", {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Token ${token}`,
-                },
-                });
+      let donationData: Donation[] = [];
+      let matchData: DonationMatch[] = [];
 
-                const donorDonations = await donorRes.json();
-                if (!donorRes.ok) throw new Error(donorDonations?.detail || "Failed to fetch donations");
+      if (profileData?.profile?.role === 'donor') {
+        const donorRes = await fetch("http://localhost:8003/FoodBridge/donations/create-donations/", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Token ${token}`,
+          },
+        });
 
-                donationData = donorDonations; // Assuming it's an array
+        const donorDonations = await donorRes.json();
+        if (!donorRes.ok) throw new Error(donorDonations?.detail || "Failed to fetch donations");
+        donationData = donorDonations;
+      } else if (profileData?.profile?.role === 'recipient') {
+        const recipientProfile = profileData.profile; // Get recipient profile
+        if (!recipientProfile) {
+            throw new Error("Recipient profile not available for matching.");
+        }
+
+        // console.log("Recipient Profile received:", recipientProfile); // ADD THIS LINE
+        // console.log("Required Food Type:", recipientProfile.required_food_type); // ADD THIS LINE
+        // console.log("Required Quantity:", recipientProfile.required_quantity); // ADD THIS LINE
+
+         // Ensure required_quantity is treated as a number
+            const quantityToSend = typeof recipientProfile.required_quantity === 'string'
+            ? parseFloat(recipientProfile.required_quantity)
+            : recipientProfile.required_quantity;
+
+        const matchRes = await fetch("http://localhost:8003/FoodBridge/donations/donation-matches/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Token ${token}`,
+          },
+          body: JSON.stringify({
+            recipient_food_type: recipientProfile.required_food_type,
+            required_quantity: quantityToSend,
+        }),
+        });
+
+        const recipientMatches = await matchRes.json();
+        // if (!matchRes.ok) throw new Error(recipientMatches?.detail || "Failed to fetch matches");
+        if (!matchRes.ok) {
+            if (matchRes.status === 404 && recipientMatches?.message) {
+                // Set the specific message for no matches found
+                setNoMatchesMessage(recipientMatches.message);
+                matchData = []; // Ensure matches array is empty
+            } else if (matchRes.status === 204 && recipientMatches?.message) { // Handle 204 as well if backend sends it
+                setNoMatchesMessage(recipientMatches.message);
+                matchData = [];
             }
+            else {
+                // For other errors, set the general error state
+                setError(recipientMatches?.detail || "Failed to fetch matches");
+                matchData = []; // Ensure matches array is empty
+            }
+            // No need to throw an error here if we're setting noMatchesMessage or a specific error
+        } else {
+            // If response is OK, set matches data
+            matchData = recipientMatches.matches;
+        }
+        matchData = recipientMatches.matches;
+      }
 
-            setDashData({ ...profileData, donations: donationData });
-   
-        //    setDashData(profileData);
-         } catch (err) {
-           console.error("Profile fetch error:", err);
-           setError("An error occurred while fetching profile");
-         } finally {
-           setLoading(false);
-         }
-       };
-   
-       fetchDashboardData();
-     }, [token]);
-   
-    //  if (loading) return <div>Loading dashboard...</div>;
-    if (loading) return <div className="animate-pulse text-gray-500">Loading dashboard...</div>
+      setDashData({ ...profileData, donations: donationData, matches: matchData });
+
+    } catch (err) {
+      console.error("Profile fetch error:", err);
+      setError("An error occurred while fetching profile");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchDashboardData();
+}, [token]);
+
+       if (loading) return <div className="animate-pulse text-gray-500">Loading dashboard...</div>
      if (error) return <div>Error: {error}</div>;
      if (!dashData) return null;
      
@@ -120,8 +168,8 @@ const Dashboard : React.FC = () => {
             
             <div className="flex items-center space-x-4 ml-4">
             <Link to="/donate">
-              <button className="bg-blue-600 text-white px-4 py-2 rounded">New Donation<span className="ml-2 items-center flex"><Plus className='h-8 w-8'/></span>
-              </button>
+              {role === 'donor' && <button className="bg-blue-600 text-white px-4 py-2 rounded">New Donation<span className="ml-2 items-center flex"><Plus className='h-8 w-8'/></span>
+              </button>}
             </Link>
 
               {/* <!-- Avatar Dropdown --> */}
@@ -150,7 +198,7 @@ const Dashboard : React.FC = () => {
              
               {/* render donations based on role */}
             <div className="grid grid-cols-1 md:grid-cols-3 col-span-3">
-            {/* donor uploaded */}
+            {/*  uploaded donations by donor */}
             {role === 'donor' && donations?.map((donation, i) => (
             <div key={i} className="bg-white p-4 rounded shadow text-left">
                 <img src="/images/download (1).jpeg" alt="donated-img" className="rounded-md mb-2 w-full" />
@@ -160,16 +208,50 @@ const Dashboard : React.FC = () => {
                 <button className="mt-2 bg-blue-500 text-white px-3 py-1 rounded text-sm">Pending</button>
             </div>
             ))}
-
-            {role === 'recipient' && matches?.map((match, i) => (
-            <div key={i} className="bg-white p-4 rounded shadow text-left">
-                <img src="/images/download (1).jpeg" alt="donated-img" className="rounded-md mb-2 w-full" />
-                <h3 className="font-semibold">{match.food_type}</h3>
-                <div className="text-sm">Donor: <strong>{match.donor_name}</strong></div>
-                <div className="text-sm">Quantity: <strong>{match.matched_quantity}</strong></div>
-                <button className="mt-2 bg-blue-500 text-white px-3 py-1 rounded text-sm">Pending</button>
+               
+            {/* matched donations for recipient  */}
+            {/* {role === 'recipient' && matches?.length > 0 && (
+              // className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+            <div className="grid grid-cols-1 md:grid-cols-3 col-span-3">
+              {matches.map((match, i) => (
+                <div key={i} className="bg-white p-4 rounded-2xl shadow-lg text-left">
+                  <img src="/images/download (1).jpeg" alt="donated-img" className="rounded-md mb-2 w-full" />
+                  <h3 className="font-semibold text-lg text-indigo-700">{match.food_type}</h3>
+                  <p className="text-sm text-gray-600">Donor: <span className="font-medium">{match.donor_name}</span></p>
+                  <p className="text-sm text-gray-700">Quantity: {match.matched_quantity}</p>
+                  <p className="text-sm text-gray-600 italic mt-1">{match.food_description}</p>
+                </div>
+              ))}
             </div>
-            ))}
+          )} */}
+
+          {role === 'recipient' && (
+              <>
+                {matches?.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-3 col-span-3"> {/* Recipient's specific grid */}
+                    {matches.map((match, i) => (
+                      <div key={i} className="bg-white p-4 rounded-2xl shadow-lg text-left">
+                        <img src="/images/food-placeholder.jpg" alt={`${match.food_type} image`} className="rounded-md mb-3 w-full h-40 object-cover" />
+                        <h3 className="font-semibold text-lg text-indigo-700">{match.food_type}</h3>
+                        <p className="text-sm text-gray-600">Donor: <span className="font-medium">{match.donor_name}</span></p>
+                        <p className="text-sm text-gray-700">Quantity: {match.matched_quantity}</p>
+                        <p className="text-sm text-gray-600 italic mt-1">{match.food_description}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  // Display message when no matches are found
+                  <div className="bg-white p-6 rounded-lg shadow-md text-center text-gray-700">
+                    <p className="text-lg font-medium">
+                        {noMatchesMessage || "No available donations found matching your criteria at this time. Please check back later or update your required food type."}
+                    </p>
+                    {/* Optional: Add a link to update profile if needed */}
+                    {/* <Link to="/profile-settings" className="text-blue-600 hover:underline mt-4 inline-block">Update Profile</Link> */}
+                  </div>
+                )}
+              </>
+            )}
+
             </div>
 
                {/* recipients list */}

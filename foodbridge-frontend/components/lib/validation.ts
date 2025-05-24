@@ -4,6 +4,7 @@ export const signUpSchema = z
   .object({
     name: z.string().min(3, "Name is required"),
     email: z.string().email("Email is required"),
+    city: z.string().min(1,"City is required"),
     password: z.string().min(8, "Password must be at least 8 characters"),
     role: z.enum(["donor", "recipient"], {
       required_error: "Role is required",
@@ -70,12 +71,13 @@ export const donationSchema = z.object({
   z.number().min(0, "Quantity must be a positive number")
 ),
   expiry_date: z.coerce.date(),
-  time_range: z.object({
-    from: z.string(),
-    until: z.string(),
-    label: z.string().min(1, "Please select a time range"),
+  // time_range: z.object({
+  //   from: z.string(),
+  //   until: z.string(),
+  //   label: z.string()
+  //   // .min(1, "Please select a time range"),
 
-  }),
+  // }),
 });
 
 export type DonationFormData = z.infer<typeof donationSchema>;

@@ -3,7 +3,9 @@ import { useAuthStore } from '../../store/authStore';
 import { fetchAvailabilitiesOptions } from '../lib/actions/availability';
 
 export const useAvailabilityOptions = () => {
-  const token = useAuthStore(state => state.token);
+  // const token = useAuthStore(state => state.token);
+  const token = useAuthStore.getState().token;
+
   const [availabilityOptions, setAvailabilityOptions] = useState<{label :string,value : string}[]>([]);
   const [loadingAvailability, setLoadingAvaialbility] = useState(true);
 

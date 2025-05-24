@@ -10,7 +10,8 @@ export const FIELD_TYPES = {
     availability : "text",
     role : "radio",
     food_description: "text", 
-    time_range: "text", 
+    city: "text", 
+    // time_range: "text", 
 
 };
 
@@ -25,8 +26,9 @@ export const FIELD_NAMES = {
     expiry_date : "Expiry Date",
     availability : "Availability",
     role : "Role",
+    city: "City", 
     food_description: "Food Description",
-    time_range: "Preferred Time Slot",
+    // time_range: "Preferred Time Slot",
 
 };
 
