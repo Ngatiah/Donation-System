@@ -87,7 +87,7 @@ const Profile: React.FC<ProfileData> = () => {
   if (error) return <div>Error: {error}</div>;
   if (!profile) return null;
   
-  const { user, contact_phone, required_food_type, required_quantity, donor_profile, recipient_profile } = profile;
+  const { user, contact_phone, required_food_type } = profile;
   const { name, role, email } = user;
 
 

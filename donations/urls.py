@@ -1,6 +1,6 @@
 # urls.py
 from django.urls import path
-from .views import UserLogin,UserRegistration,DonationsMatch,UserLogout,UserProfile,switch_role,Dashboard,DonationOptions,CreateOrListDonation,EditProfile,TimeRangeOptionsView,AvailabilityListAPIView,DonationsHistory,CityOptions
+from .views import UserLogin,UserRegistration,DonationsMatch,UserLogout,UserProfile,switch_role,Dashboard,DonationOptions,CreateOrListDonation,EditProfile,TimeRangeOptionsView,AvailabilityListAPIView,DonationsHistory,CityOptions,TopUsers
 
 urlpatterns = [
     path('', Dashboard.as_view(), name='home'),
@@ -17,4 +17,5 @@ urlpatterns = [
     path('availabilities/', AvailabilityListAPIView.as_view(), name='availability-list'),
     path('time-range-options/', TimeRangeOptionsView.as_view(), name='time-range-options'),
     path('cities/', CityOptions.as_view(), name='cities'),
+    path('top-users/', TopUsers.as_view(), name='top-users'), 
 ]

@@ -166,7 +166,7 @@ class DonationSerializer(serializers.ModelSerializer):
     # availability = AvailabilitySerializer(many=True,required=False)
     class Meta:
         model = Donation
-        fields = ['food_type','food_description', 'quantity','expiry_date','donor_name']
+        fields = ['id','food_type','food_description', 'quantity','expiry_date','donor_name']
 
     def get_donor_name(self, obj):
         return obj.donor.user.name
@@ -240,18 +240,10 @@ class RecipientSerializer(serializers.ModelSerializer):
         else:
             None
 
-    # def get_required_quantity(self,obj):
-    #     if obj.role == 'recipient' and hasattr(obj, 'recipient_profile'):
-    #         return str(obj.recipient_profile.required_quantity)
-    #     return None
-    
-    # def get_required_food_type(self,obj):
-    #     if obj.role == 'recipient' and hasattr(obj, 'recipient_profile'):
-    #         return str(obj.recipient_profile.required_food_type)
-    #     return None
 
-    
-
+class TopUserSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    total_quantity_kg = serializers.FloatField()
     
 
 class DonationHistorySerializer(serializers.ModelSerializer):

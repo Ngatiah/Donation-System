@@ -110,6 +110,9 @@ class DonationMatch(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     match_score = models.IntegerField(default=0)
 
+    class Meta:
+        ordering = ['-created_at']
+
     def __str__(self):
         return f"Match: {self.donor.user.name} → {self.recipient.user.name} ({self.food_type})"
 

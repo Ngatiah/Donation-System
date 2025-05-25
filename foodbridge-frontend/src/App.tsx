@@ -10,7 +10,6 @@ import Sidebar from '../components/miscellaneous/Sidebar'
 import Donate from '../components/donations/Donate'
 import Logout from '../components/auth/logout'
 import DonationHistory from '../components/donations/DonationHistory'
-import DonationsMatch from '../components/donations/DonationsMatch'
 
 
 const App: React.FC = () => {
@@ -47,9 +46,9 @@ const App: React.FC = () => {
         <Donate/>
       }/>
 
-      <Route path="donation-matches" element={
+      {/* <Route path="donation-matches" element={
           <DonationsMatch/>
-      }/>
+      }/> */}
 
       <Route path="donations-history" element={
             <DonationHistory/>

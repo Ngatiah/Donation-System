@@ -12,7 +12,9 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 import os
+import hashlib
 from decouple import config
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -41,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
 
+    'channels',
     'rest_framework',
     'knox',
     'corsheaders',
@@ -81,6 +84,8 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'FoodBridge.wsgi.application'
+ASGI_APPLICATION = 'FoodBridge.asgi.application'
+
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
@@ -119,6 +124,18 @@ REST_FRAMEWORK = {
         ),
 
 }
+
+REST_KNOX = {
+    'SECURE_HASH_ALGORITHM': hashlib.sha512,
+    'AUTH_TOKEN_CHARACTER_LENGTH': 64,
+    'TOKEN_TTL': timedelta(hours=10), # Adjust as per your security requirements
+    'USER_SERIALIZER': 'donations.serializers.UserSerializer', 
+    'TOKEN_LIMIT_PER_USER': None,
+    'AUTO_REFRESH': False,
+    'EXPIRY_DATETIME_FORMAT': "%Y-%m-%d %H:%M:%S",
+    'TOKEN_KEY_LENGTH': 15, 
+}
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
@@ -159,3 +176,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # ]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS =True
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],
+        },
+    },
+}

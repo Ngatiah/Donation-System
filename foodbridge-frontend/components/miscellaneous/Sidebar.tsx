@@ -18,7 +18,7 @@ const Sidebar : React.FC= ()=> {
               </svg>
               <span className="hidden md:inline">Profile</span>
           </Link>
-          <Link to="/history" className="flex items-center text-blue-500 font-semibold">
+          <Link to="/donations-history" className="flex items-center text-blue-500 font-semibold">
               {/* <!-- History Icon (Clock) --> */}
               <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-8.75V6a.75.75 0 00-1.5 0v4.25c0 .414.336.75.75.75h3a.75.75 0 000-1.5H10.75z" clipRule="evenodd" />

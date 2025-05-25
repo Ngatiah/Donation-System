@@ -165,3 +165,459 @@
     #         return 'recipient'
     #     return 'unknown'
 
+
+
+
+# class DonationsMatch(APIView):
+#     serializer_class = DonationSerializer
+#     permission_classes = [IsAuthenticated]
+#     throttle_classes = [UserRateThrottle]
+
+#     def post(self, request):
+#         rf_model, le_food, _ , _= get_matching_models()
+#         try:
+#             user = request.user
+#             try:
+#                 recipient = user.recipient_profile
+#             except Recipient.DoesNotExist:
+#                 return Response({'error': 'Recipient profile not found.'}, status=404)
+
+#             data = request.data
+#             recipient_food = data.get('recipient_food_type', '').strip().lower()
+#             required_quantity = float(data.get('required_quantity', 0))
+#             recipient_lat = float(data.get('lat', recipient.lat))
+#             recipient_lng = float(data.get('lng', recipient.lng))
+
+#             try:
+#                 recipient_food_encoded = le_food.transform([recipient_food])[0]
+#             except ValueError:
+#                 return Response({
+#                     'error': f"Unsupported food_type: '{recipient_food}'",
+#                     'supported_types': list(le_food.classes_)
+#                 }, status=400)
+
+#             donations = Donation.objects.filter(
+#                 quantity__gte=required_quantity,
+#                 expiry_date__gte=timezone.now().date(),
+#                 donor__city__iexact=recipient.city
+#             ).filter(
+#                 Q(food_type__icontains=recipient_food) | Q(food_type__iexact=recipient_food)
+#             ).select_related('donor')
+
+#             match_inputs,donor_map = [],[]
+
+#             for donation in donations:
+#                 donor = donation.donor
+#                 try:
+#                     donation_food_encoded = le_food.transform([donation.food_type.strip().lower()])[0]
+#                 except ValueError:
+#                     continue
+
+#                 distance_km = geodesic((recipient_lat, recipient_lng), (donor.lat, donor.lng)).km
+#                 food_match = int(recipient_food_encoded == donation_food_encoded)
+#                 quantity_match = int(donation.quantity >= required_quantity)
+
+#                 match_inputs.append({
+#                     'food_match': food_match,
+#                     'quantity_match': quantity_match,
+#                     'distance': distance_km
+#                 })
+#                 donor_map.append((donation, donor))
+
+#             if not match_inputs:
+#                 return Response({"message": "No donations currently available for matching."}, status=404)
+
+#             df = pd.DataFrame(match_inputs)
+#             predictions = rf_model.predict(df)
+    
+#             matched_donors = []
+#             for pred, (donation, donor),match_input in zip(predictions, donor_map,match_inputs):
+#                 if pred == 1:
+#                     # match_score = int((food_match * 0.4 + quantity_match * 0.3 + max(0, 1 - (distance_km / 50)) * 0.3) * 100)
+#                     match_score = int((
+#                     match_input['food_match'] * 0.4 +
+#                     match_input['quantity_match'] * 0.3 +
+#                     max(0, 1 - (match_input['distance'] / 50)) * 0.3
+#                 ) * 100)
+#                     DonationMatch.objects.create(
+#                         donor=donor,
+#                         recipient=recipient,
+#                         food_type=donation.food_type,
+#                         matched_quantity=required_quantity,
+#                         expiry_date=donation.expiry_date,
+#                         food_description=donation.food_description or f"Auto-matched donation from {donor.user.name}",
+#                         match_score=match_score
+#                     )
+#                     matched_donors.append(DonorSerializer(donor).data)
+
+#             if not matched_donors:
+#                 return Response({'message': 'No suitable donors matched by the AI model.'}, status=204)
+
+#             return Response({'matches': matched_donors}, status=200)
+
+#         except Exception as e:
+#             logger.exception("Matching failed")
+#             return Response({'error': str(e)}, status=500)
+
+
+
+# class DonationsMatch(APIView):
+#     serializer_class = DonationSerializer # Note: This serializer is not directly used for the response data structure here
+#     permission_classes = [IsAuthenticated]
+#     throttle_classes = [UserRateThrottle]
+
+#     def post(self, request):
+#         rf_model, le_food, _, _ = get_matching_models()
+#         try:
+#             user = request.user
+#             try:
+#                 # Assuming 'recipient_profile' is the related_name from User to Recipient model
+#                 recipient = user.recipient_profile
+#             except Recipient.DoesNotExist:
+#                 return Response({'error': 'Recipient profile not found.'}, status=404)
+
+#             data = request.data
+#             recipient_food = data.get('recipient_food_type', '').strip().lower()
+#             required_quantity = float(data.get('required_quantity', 0))
+#             # Fallback to recipient's stored lat/lng if not provided in request
+#             recipient_lat = float(data.get('lat', recipient.lat))
+#             recipient_lng = float(data.get('lng', recipient.lng))
+
+#             if not recipient_food:
+#                 return Response({'error': 'recipient_food_type is required.'}, status=400)
+#             if not required_quantity:
+#                 return Response({'error': 'required_quantity is required.'}, status=400)
+
+#             try:
+#                 # Ensure recipient_food is in a list for transform
+#                 recipient_food_encoded = le_food.transform([recipient_food])[0]
+#             except ValueError:
+#                 return Response({
+#                     'error': f"Unsupported food_type: '{recipient_food}'",
+#                     'supported_types': list(le_food.classes_)
+#                 }, status=400)
+
+#             donations = Donation.objects.filter(
+#                 # quantity__gte=required_quantity,
+#                 quantity__gte=0,
+#                 expiry_date__gte=timezone.now().date(),
+#                 donor__city__iexact=recipient.city
+#             ).filter(
+#                 Q(food_type__icontains=recipient_food) | Q(food_type__iexact=recipient_food)
+#             ).select_related('donor__user') # Select related user for donor's name
+
+#             match_inputs, donor_donation_map = [], []
+
+#             for donation in donations:
+#                 donor = donation.donor
+#                 try:
+#                     donation_food_encoded = le_food.transform([donation.food_type.strip().lower()])[0]
+#                 except ValueError:
+#                     # Skip donations with unknown food types
+#                     continue
+
+#                 distance_km = geodesic((recipient_lat, recipient_lng), (donor.lat, donor.lng)).km
+#                 food_match = int(recipient_food_encoded == donation_food_encoded)
+#                 quantity_match = int(donation.quantity >= required_quantity)
+
+#                 match_inputs.append({
+#                     'food_match': food_match,
+#                     'quantity_match': quantity_match,
+#                     'distance': distance_km,
+#                     # 'capped_quantity_ratio': capped_quantity_ratio, 
+#                 })
+#                 # donor_donation_map.append((donation, donor,capped_quantity_ratio))
+#                 donor_donation_map.append((donation, donor))
+
+#             if not match_inputs:
+#                 return Response({"message": "No donations currently available for matching based on initial filters."}, status=404)
+
+#             df = pd.DataFrame(match_inputs)
+#             predictions = rf_model.predict(df)
+
+#             matched_details_for_response = []
+#             notifications_to_send = []
+
+#             # Get the channel layer instance once
+#             channel_layer = get_channel_layer()
+
+#             for i, pred in enumerate(predictions):
+#                 if pred == 1:
+#                     # donation, donor,current_capped_quantity_ratio = donor_donation_map[i]
+#                     donation, donor = donor_donation_map[i]
+
+#                     match_input = match_inputs[i] # Get the corresponding match_input
+
+#                     match_score = int((
+#                         match_input['food_match'] * 0.4 +
+#                         match_input['quantity_match'] * 0.3 +
+#                         max(0, 1 - (match_input['distance'] / 50)) * 0.3 # Max distance for score contribution
+#                     ) * 100)
+
+
+#                     # Create the DonationMatch object in the database
+#                    DonationMatch.objects.create(
+#                         donor=donor,
+#                         recipient=recipient,
+#                         food_type=donation.food_type,
+#                         matched_quantity=required_quantity,
+#                         # matched_quantity=min(donation.quantity, required_quantity),
+#                         expiry_date=donation.expiry_date,
+#                         food_description=donation.food_description or f"Auto-matched donation from {donor.user.name}",
+#                         match_score=match_score
+#                     ).first()
+
+#                     # if existing_match
+
+#                     # Prepare data for API response (Dashboard display)
+#                     matched_details_for_response.append({
+#                         'donor_name': donor.user.name,
+#                         'recipient_name': recipient.user.name,
+#                         'food_type': donation.food_type,
+#                         'matched_quantity': required_quantity,
+#                         'food_description': donation.food_description,
+#                         'expiry_date': donation.expiry_date.isoformat(),
+#                     })
+
+#                     # --- Prepare data for real-time notifications ---
+#                     # Notification for the RECIPIENT
+#                     notifications_to_send.append({
+#                         'group_name': f'user_{recipient.user.id}',
+#                         'message_content': {
+#                             'message': f"Great news! A donation of {donation.food_type} ({required_quantity}kg) from {donor.user.name} has been matched for you!",
+#                             'notification_type': 'match_found_recipient',
+#                             'data': {
+#                                 'match_id': None, # You could get the ID if needed after creation
+#                                 'food_type': donation.food_type,
+#                                 'matched_quantity': required_quantity,
+#                                 'donor_name': donor.user.name,
+#                                 'food_description': donation.food_description,
+#                             }
+#                         }
+#                     })
+
+#                     # Notification for the DONOR
+#                     notifications_to_send.append({
+#                         'group_name': f'user_{donor.user.id}',
+#                         'message_content': {
+#                             'message': f"Your donation of {donation.food_type} ({donation.quantity}kg) has been matched with {recipient.user.name}!",
+#                             'notification_type': 'match_found_donor',
+#                             'data': {
+#                                 'match_id': None, 
+#                                 'food_type': donation.food_type,
+#                                 'donated_quantity': donation.quantity,
+#                                 'recipient_name': recipient.user.name,
+#                                 'food_description': donation.food_description,
+#                             }
+#                         }
+#                     })
+
+#             # Send all accumulated notifications using the channel layer
+#             for notif in notifications_to_send:
+#                 async_to_sync(channel_layer.group_send)(
+#                     notif['group_name'],
+#                     {
+#                         "type": "send_notification", # Corresponds to method in NotificationConsumer
+#                         "message": notif['message_content']['message'],
+#                         "notification_type": notif['message_content']['notification_type'],
+#                         "data": notif['message_content']['data']
+#                     }
+#                 )
+
+#             if not matched_details_for_response:
+#                 return Response({'message': 'No suitable donations matched by the AI model.'}, status=204)
+
+#             return Response({'matches': matched_details_for_response}, status=200)
+
+#         except Exception as e:
+#             logger.exception("Donation matching failed for user %s: %s", request.user, str(e))
+#             return Response({'error': 'An unexpected error occurred during matching.'}, status=500)
+
+
+
+
+# s DonationsMatch(APIView):
+#     serializer_class = DonationSerializer
+#     permission_classes = [IsAuthenticated]
+#     throttle_classes = [UserRateThrottle]
+
+#     def post(self, request):
+#         rf_model, le_food, _, _ = get_matching_models()
+#         try:
+#             user = request.user
+#             try:
+#                 recipient = user.recipient_profile
+#             except Recipient.DoesNotExist:
+#                 return Response({'error': 'Recipient profile not found.'}, status=404)
+
+#             data = request.data
+#             recipient_food = data.get('recipient_food_type', '').strip().lower()
+#             required_quantity = float(data.get('required_quantity', 0))
+#             recipient_lat = float(data.get('lat', recipient.lat))
+#             recipient_lng = float(data.get('lng', recipient.lng))
+
+#             if not recipient_food:
+#                 return Response({'error': 'recipient_food_type is required.'}, status=400)
+#             if not required_quantity:
+#                 return Response({'error': 'required_quantity is required.'}, status=400)
+
+#             try:
+#                 recipient_food_encoded = le_food.transform([recipient_food])[0]
+#             except ValueError:
+#                 return Response({
+#                     'error': f"Unsupported food_type: '{recipient_food}'",
+#                     'supported_types': list(le_food.classes_)
+#                 }, status=400)
+
+#             donations = Donation.objects.filter(
+#                 quantity__gte=0,
+#                 expiry_date__gte=timezone.now().date(),
+#                 donor__city__iexact=recipient.city
+#             ).filter(
+#                 Q(food_type__icontains=recipient_food) | Q(food_type__iexact=recipient_food)
+#             ).select_related('donor__user')
+
+#             match_inputs, donor_donation_map = [], []
+
+#             for donation in donations:
+#                 donor = donation.donor
+#                 try:
+#                     donation_food_encoded = le_food.transform([donation.food_type.strip().lower()])[0]
+#                 except ValueError:
+#                     continue
+
+#                 distance_km = geodesic((recipient_lat, recipient_lng), (donor.lat, donor.lng)).km
+#                 food_match = int(recipient_food_encoded == donation_food_encoded)
+#                 quantity_match = int(donation.quantity >= required_quantity)
+
+#                 match_inputs.append({
+#                     'food_match': food_match,
+#                     'quantity_match': quantity_match,
+#                     'distance': distance_km,
+#                 })
+#                 donor_donation_map.append((donation, donor))
+
+#             if not match_inputs:
+#                 return Response({"message": "No donations currently available for matching based on initial filters."}, status=404)
+
+#             df = pd.DataFrame(match_inputs)
+#             predictions = rf_model.predict(df)
+
+#             matched_details_for_response = []
+#             notifications_to_send = []
+
+#             channel_layer = get_channel_layer()
+
+#             for i, pred in enumerate(predictions):
+#                 if pred == 1:
+#                     donation, donor = donor_donation_map[i]
+#                     match_input = match_inputs[i]
+
+#                     # --- DEDUPLICATION LOGIC START ---
+#                     # Define what constitutes a "duplicate" for your business logic.
+#                     # A common approach is same donor, same recipient, same food type, and same original donation ID.
+#                     existing_match = DonationMatch.objects.filter(
+#                         donor=donor,
+#                         recipient=recipient,
+#                         food_type=donation.food_type,
+#                         # If a specific original donation is always associated, link to it:
+#                         # original_donation=donation, # Add this field to your DonationMatch model if you track the source donation
+#                         # Consider also checking if the match was created recently to prevent continuous re-matching
+#                     ).first()
+
+#                     if existing_match:
+#                         logger.info(f"Skipping creation of duplicate match for {donor.user.name} and {recipient.user.name} for {donation.food_type}. Match ID: {existing_match.id}")
+#                         # If you want to include existing matches in the response:
+#                         match_to_add_to_response = {
+#                             'id': existing_match.id, # Include ID for frontend deduplication
+#                             'donor_name': donor.user.name,
+#                             'recipient_name': recipient.user.name,
+#                             'food_type': existing_match.food_type,
+#                             'matched_quantity': existing_match.matched_quantity,
+#                             'food_description': existing_match.food_description,
+#                             'expiry_date': existing_match.expiry_date.isoformat(),
+#                         }
+#                         matched_details_for_response.append(match_to_add_to_response)
+#                         continue # Skip to the next prediction as this match already exists
+#                     # --- DEDUPLICATION LOGIC END ---
+
+#                     match_score = int((
+#                         match_input['food_match'] * 0.4 +
+#                         match_input['quantity_match'] * 0.3 +
+#                         max(0, 1 - (match_input['distance'] / 50)) * 0.3
+#                     ) * 100)
+
+#                     # Create the new DonationMatch object in the database
+#                     new_match = DonationMatch.objects.create(
+#                         donor=donor,
+#                         recipient=recipient,
+#                         food_type=donation.food_type,
+#                         matched_quantity=required_quantity,
+#                         expiry_date=donation.expiry_date,
+#                         food_description=donation.food_description or f"Auto-matched donation from {donor.user.name}",
+#                         match_score=match_score
+#                     )
+
+#                     # Prepare data for API response (Dashboard display)
+#                     matched_details_for_response.append({
+#                         'id': new_match.id, # IMPORTANT: Include the ID here!
+#                         'donor_name': donor.user.name,
+#                         'recipient_name': recipient.user.name,
+#                         'food_type': donation.food_type,
+#                         'matched_quantity': required_quantity,
+#                         'food_description': donation.food_description,
+#                         'expiry_date': donation.expiry_date.isoformat(),
+#                     })
+
+#                     # --- Prepare data for real-time notifications ---
+#                     # (Ensure these also use new_match.id where applicable)
+#                     notifications_to_send.append({
+#                         'group_name': f'user_{recipient.user.id}',
+#                         'message_content': {
+#                             'message': f"Great news! A donation of {donation.food_type} ({required_quantity}kg) from {donor.user.name} has been matched for you!",
+#                             'notification_type': 'match_found_recipient',
+#                             'data': {
+#                                 'match_id': new_match.id,
+#                                 'food_type': donation.food_type,
+#                                 'matched_quantity': required_quantity,
+#                                 'donor_name': donor.user.name,
+#                                 'food_description': donation.food_description,
+#                             }
+#                         }
+#                     })
+
+#                     notifications_to_send.append({
+#                         'group_name': f'user_{donor.user.id}',
+#                         'message_content': {
+#                             'message': f"Your donation of {donation.food_type} ({donation.quantity}kg) has been matched with {recipient.user.name}!",
+#                             'notification_type': 'match_found_donor',
+#                             'data': {
+#                                 'match_id': new_match.id,
+#                                 'food_type': donation.food_type,
+#                                 'donated_quantity': donation.quantity,
+#                                 'recipient_name': recipient.user.name,
+#                                 'food_description': donation.food_description,
+#                             }
+#                         }
+#                     })
+
+#             # Send all accumulated notifications using the channel layer
+#             for notif in notifications_to_send:
+#                 async_to_sync(channel_layer.group_send)(
+#                     notif['group_name'],
+#                     {
+#                         "type": "send_notification",
+#                         "message": notif['message_content']['message'],
+#                         "notification_type": notif['message_content']['notification_type'],
+#                         "data": notif['message_content']['data']
+#                     }
+#                 )
+
+#             if not matched_details_for_response:
+#                 return Response({'message': 'No suitable donations matched by the AI model.'}, status=204)
+
+#             return Response({'matches': matched_details_for_response}, status=200)
+
+#         except Exception as e:
+#             logger.exception("Donation matching failed for user %s: %s", request.user, str(e))
+#             return Response({'error': 'An unexpected error occurred during matching.'}, status=500)
