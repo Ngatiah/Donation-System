@@ -1,4 +1,5 @@
-import { boolean, z } from "zod";
+// import { boolean, z } from "zod";
+import { z } from "zod";
 import {parsePhoneNumberFromString} from 'libphonenumber-js'
 export const signUpSchema = z
   .object({
@@ -9,7 +10,7 @@ export const signUpSchema = z
     role: z.enum(["donor", "recipient"], {
       required_error: "Role is required",
     }),
-    food_type: z.string().optional(),
+    food_type: z.array(z.string()).optional(),
     quantity: z.preprocess(
       (val) => {
         if (typeof val === "string") {
@@ -37,18 +38,19 @@ export const signUpSchema = z
     })
   .superRefine((data, ctx) => {
     if (data.role === "recipient") {
-      if (!data.food_type || data.food_type.length < 3) {
+      // atleast one must be chosen || undefined  || []
+      if (!data.food_type || data.food_type.length === 0) {
         ctx.addIssue({
           path: ["food_type"],
-          message: "Food type is required for recipients",
+          message: "Please choose at least ONE food type for recipients.",
           code: z.ZodIssueCode.custom,
         });
       }
 
-      if (data.quantity === undefined || isNaN(data.quantity)) {
+      if (data.quantity === undefined || isNaN(data.quantity) || data.quantity <= 0) {
         ctx.addIssue({
           path: ["quantity"],
-          message: "Quantity is required for recipients",
+          message: "Quantity required and must be greater than zero for recipients",
           code: z.ZodIssueCode.custom,
         });
       }
@@ -64,7 +66,8 @@ export const signInSchema = z.object({
 
 
 export const donationSchema = z.object({
-  food_type: z.string().default(""),
+  // food_type: z.array(z.string()).default([]),
+  food_type: z.string().default(''),
   food_description: z.string().default(""),
   quantity: z.preprocess(
   (val) => (typeof val === "string" ? parseInt(val, 10) : val),
@@ -87,22 +90,22 @@ export type DonationFormData = z.infer<typeof donationSchema>;
 export const editProfileSchema = z.object({
   name: z.string().min(3, "Name is required"),
   role: z.enum(["donor", "recipient"]).optional(),
-  food_type: z.string().optional(),
-  // quantity: z.preprocess(
-  //     (val) => {
-  //       if (typeof val === "string") {
-  //         return parseInt(val, 10);
-  //       }
-  //       return val;
-  //     },
-  //     z.number().optional().refine((val) => val === undefined || val >= 0, {
-  //       message: "Quantity must be a positive number",
-  //     })
-  //   ),    
-  quantity : z.preprocess(
-  (val) => val === undefined ? 0 : typeof val === "string" ? parseInt(val, 10) : val,
-  z.number().min(0)
-  ),
+  food_type: z.array(z.string()).optional(),
+  quantity: z.preprocess(
+      (val) => {
+        if (typeof val === "string") {
+          return parseInt(val, 10);
+        }
+        return val;
+      },
+      z.number().optional().refine((val) => val === undefined || val >= 0, {
+        message: "Quantity must be a positive number",
+      })
+    ),   
+  // quantity : z.preprocess(
+  // (val) => val === undefined ? 0 : typeof val === "string" ? parseInt(val, 10) : val,
+  // z.number().min(0)
+  // ),
   contact_phone: z
     .string()
     .min(9, "Phone number must be at least 9 characters long")
@@ -116,7 +119,7 @@ export const editProfileSchema = z.object({
       const phone = parsePhoneNumberFromString(val,'KE');
       return phone ? phone.format("E.164") : val;
     }),
-  available : boolean()
+  // available : boolean()
 }).superRefine((data, ctx) => {
   if (data.role === "recipient" && !data.food_type) {
     ctx.addIssue({

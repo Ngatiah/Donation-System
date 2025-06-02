@@ -6,16 +6,11 @@ import { donationSchema } from '../lib/validation';
 
 const Donate : React.FC = ()=> {
   const token = useAuthStore.getState().token;
-  // console.log("Donation Schema:", donationSchema); 
-  //   const cleanData = {
-  //   ...formData,
-  //   expiry_date: formData.expiry_date.toISOString().split("T")[0], // "YYYY-MM-DD"
-  //  };
   return (
     <DonationForm
     schema={donationSchema}
     defaultValues={{
-        food_type: "",
+        food_type: '',
         quantity: 0,
         expiry_date: new Date(),
         // time_range: {

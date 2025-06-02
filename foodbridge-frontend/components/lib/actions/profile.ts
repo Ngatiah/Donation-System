@@ -4,14 +4,12 @@ export async function editProfile({
     food_type,
     quantity,
     role,
-    available,
   } : {
     name : string,
     contact_phone : string,
-    food_type?: string,
+    food_type?: string[],
     quantity : number,
     role : "donor" | 'recipient',
-    available : boolean,
   }, token: string | null)  {
     try {
       const payload =
@@ -20,7 +18,6 @@ export async function editProfile({
               donor_profile: {
                 name,
                 contact_phone,
-                available,
               },
             }
           : {
@@ -29,7 +26,6 @@ export async function editProfile({
                 contact_phone,
                 food_type,
                 quantity,
-                available,
               },
             };
       const res = await fetch("http://localhost:8003/FoodBridge/donations/edit-profile/", {

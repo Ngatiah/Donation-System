@@ -2,31 +2,12 @@ import CustomAvatar from "../UI/Avatar";
 import React,{useState,useEffect} from "react";
 import { Link } from "react-router-dom";
 import {FaPen} from 'react-icons/fa'
-import {AiFillMail} from 'react-icons/ai'
+// import {AiFillMail} from 'react-icons/ai'
 import { useAuthStore } from "../../store/authStore";
-
-// interface User{
-//   name : string;
-//   role : string;
-//   email:string;
-
-// }
-// interface ProfileData{
-//   user : User;
-//   contact_phone : string;
-//   required_food_type : string;
-// }
-
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-  
-}
 
 interface DonorProfile {
   contact_phone: string;
+  donor_name : string;
 
 }
 
@@ -34,13 +15,15 @@ interface RecipientProfile {
   contact_phone: string;
   required_food_type: string;
   required_quantity: string;
+  recipient_name:string;
 }
 
 interface ProfileData {
-  user: User;
+  // user: User;
+  // name:string;
   role: string;
   contact_phone: string;
-  required_food_type: string;
+  // required_food_type: string;
   required_quantity: string;
   donor_profile?: DonorProfile;
   recipient_profile?: RecipientProfile;
@@ -87,8 +70,11 @@ const Profile: React.FC<ProfileData> = () => {
   if (error) return <div>Error: {error}</div>;
   if (!profile) return null;
   
-  const { user, contact_phone, required_food_type } = profile;
-  const { name, role, email } = user;
+  const {role,contact_phone,recipient_profile,donor_profile} = profile;
+  const reqFood = recipient_profile?.required_food_type;
+  const reqQuantity = recipient_profile?.required_quantity;
+  const name = recipient_profile ? recipient_profile.recipient_name : donor_profile ? donor_profile.donor_name : ''
+
 
 
   return (
@@ -113,8 +99,13 @@ const Profile: React.FC<ProfileData> = () => {
                 {/* <p className="text-sm text-gray-400">📍 Hyderabad</p> */}
 
                 {/* <p className="text-sm text-gray-400">📍 Hyderabad</p> */}
-                <p className="text-sm text-gray-400 flex justify-between items-center"><span><AiFillMail className="h-4 w-4"/>{email}</span></p>
-                <p className="text-sm text-gray-400 flex justify-between items-center">{required_food_type}</p>
+                {/* <p className="text-sm text-gray-400 flex justify-between items-center"><span><AiFillMail className="h-4 w-4"/>{email}</span></p> */}
+                 {recipient_profile && (
+                    <>
+                      <p className="text-sm text-gray-400">{Array.isArray(reqFood) ? reqFood.join(", ") : reqFood}</p>
+                      <p className="text-sm text-gray-400">Required Quantity: {reqQuantity}</p>
+                    </>
+                  )}
 
               </div>
             </div>

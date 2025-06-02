@@ -4,11 +4,12 @@ from django.conf import settings
 from datetime import timedelta
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+# from django.contrib.postgres.fields import ArrayField # If you are ONLY using PostgreSQL
+
 
 
 # Create your models here.
 class Availability(models.Model):
-
     day_of_week = models.CharField(
         max_length=10,
         choices=[
@@ -21,34 +22,18 @@ class Availability(models.Model):
             ('sunday', 'Sunday'),
         ],
         null=True,
-        blank=True  # Optional to support more precise availability
+        blank=True 
     )
-
-    # specific_date = models.DateField(null=True, blank=True)  # Exact date availability
-    # start_date = models.DateField(null=True, blank=True)     # Range start
-    # end_date = models.DateField(null=True, blank=True)       # Range end
-    # available_from = models.TimeField()
-    # available_until = models.TimeField()
 
     class Meta:
         verbose_name_plural = "Availabilities"
 
     def __str__(self):
         return f"{self.day_of_week.capitalize()}"
-        # if self.specific_date:
-        #     return f"{self.specific_date} from {self.available_from} to {self.available_until}"
-        # elif self.start_date and self.end_date:
-        #     return f"{self.start_date}–{self.end_date} from {self.available_from} to {self.available_until}"
-        # elif self.day_of_week:
-        #     return f"{self.day_of_week.capitalize()} from {self.available_from} to {self.available_until}"
-        # return f"Available from {self.available_from} to {self.available_until}"
     
     def clean(self):
         if not self.day_of_week:
             raise ValidationError("You must specify a day of the week.")
-        # if not any([self.specific_date, (self.start_date and self.end_date), self.day_of_week]):
-        #     raise ValidationError("You must specify either a specific date, a date range, or a day of the week.")
-
 
 
 class Donor(models.Model):
@@ -68,7 +53,11 @@ class Recipient(models.Model):
     lat = models.FloatField(null=True, blank=True)
     lng = models.FloatField(null=True, blank=True)
 
-    required_food_type = models.CharField(max_length=255,null=True,blank=True)
+    # required_food_type = models.CharField(max_length=255,null=True,blank=True)
+    # multi-selction of food type
+    required_food_type = models.JSONField(default=list,blank=True,null=True)
+    # required_food_type = ArrayField(models.CharField(max_length=255), default=list, blank=True, null=True)
+
     required_quantity = models.FloatField()
     urgency = models.CharField(max_length=50, choices=[('low', 'Low'), ('medium', 'Medium'), ('high', 'High')])
     contact_phone = PhoneNumberField(blank=False,null=False)
@@ -86,17 +75,20 @@ class Donation(models.Model):
     food_description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     availability = models.ManyToManyField('Availability', blank=True, related_name='donation_availabilities')
+    is_claimed = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Donation of {self.food_type} ({self.quantity}) by {self.donor.user.name}"
+     
+    # class Meta:
+    #     ordering = ['-created_at']
 
 
 class DonationMatch(models.Model):
     donor = models.ForeignKey('Donor', on_delete=models.CASCADE, related_name='matches')
     recipient = models.ForeignKey('Recipient', on_delete=models.CASCADE, related_name='matches')
-
+    donation = models.ForeignKey('Donation', on_delete=models.CASCADE, related_name='matches')
     food_type = models.CharField(max_length=255)
-    # shelf_type = models.CharField(max_length=255, blank=True)  # from shelf_map
     matched_quantity = models.FloatField()
     expiry_date = models.DateField(
     verbose_name="Expiry Date",
@@ -109,21 +101,19 @@ class DonationMatch(models.Model):
     selected_availability = models.ManyToManyField('Availability', blank=True, related_name='match_availabilities')
     created_at = models.DateTimeField(auto_now_add=True)
     match_score = models.IntegerField(default=0)
+    is_claimed = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['-created_at']
+        verbose_name_plural = "Donation Matches"
 
     def __str__(self):
         return f"Match: {self.donor.user.name} → {self.recipient.user.name} ({self.food_type})"
+    
 
-# class Notifications():
-#     pass
+# class Feedback(models.Model):
+#     match = models.OneToOneField(DonationMatch, on_delete=models.CASCADE)
+#     rating = models.PositiveIntegerField()  # 1–5 stars
+#     comment = models.TextField(blank=True)
+#     created_at = models.DateTimeField(auto_now_add=True)
 
-
-# class DonationStatus():
-    #  choices=[
-    #         ('pending', 'Pending'),
-    #         ('accepted', 'Accepted'),
-    #         ('declined', 'Declined'),
-    #     ],
-#     pass

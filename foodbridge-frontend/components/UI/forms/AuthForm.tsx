@@ -1,4 +1,4 @@
-// import React from "react";
+import React, {  useCallback } from 'react'; 
 import type{
   DefaultValues,
   FieldValues,
@@ -10,9 +10,12 @@ import {useForm } from 'react-hook-form'
 import { ZodType } from "zod";
 import {Link} from 'react-router-dom'
 import {toast} from '../../hooks/use-toast'
+// import{ toast } from'react-hot-toast';
+// import CustomAsyncSelect  from "../CustomSelect";
+import AsyncSelect from 'react-select/async';
 import { useNavigate } from "react-router-dom";
 import {PhoneInput} from '../PhoneInput'
-import {DropdownMenu,DropdownMenuItem,DropdownMenuContent,DropdownMenuTrigger} from '../DropdownMenu'
+// import {DropdownMenu,DropdownMenuItem,DropdownMenuContent,DropdownMenuTrigger} from '../DropdownMenu'
 import {
   Form,
   FormControl,
@@ -27,7 +30,13 @@ import { FIELD_NAMES, FIELD_TYPES } from "../../constants";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useDonationOptions } from "../../hooks/useDonationOptions";
 import { useCity } from "../../hooks/useCity";
+import makeAnimated from 'react-select/animated'
 
+// import { FileDiff } from "lucide-react";
+interface SelectOption {
+  value: string;
+  label: string;
+}
 
 interface Props<T extends FieldValues> {
   schema: ZodType<T>;
@@ -52,7 +61,55 @@ function AuthForm<T extends FieldValues>({
   });
   const role = form.watch('role' as Path<T>) as Role;
   const {foodTypes,loading} = useDonationOptions()
-  const { cities, loadingCities } = useCity();
+  const { cities : allCities, loadingCities } = useCity();
+  const animatedComponents = makeAnimated()
+  const filterFoodTypes = useCallback((inputValue: string) => {
+  if (!inputValue) {
+     return foodTypes.map(type => ({ value: type, label: type }));
+         }
+    // Filter based on input value (case-insensitive)
+    return foodTypes
+        .filter(type => type.toLowerCase().includes(inputValue.toLowerCase()))
+               .map(type => ({ value: type, label: type }));
+        }, [foodTypes]);
+             
+             
+    const loadOptions = useCallback((inputValue: string) =>
+                 new Promise<SelectOption[]>(resolve => {
+                     resolve(filterFoodTypes(inputValue));
+                 }),
+        [filterFoodTypes]);
+               
+
+    //   const cityOptions = allCities.map(city => ({ value: city, label: city }));
+    //   const loadCityOptions = (inputValue: string) => {
+    //   return new Promise<SelectOption[]>(resolve => {
+    //     // Filter cities based on inputValue (optional)
+    //     const filtered = allCities
+    //       .filter(city => city.toLowerCase().includes(inputValue.toLowerCase()))
+    //       .map(city => ({ value: city, label: city }));
+    //     resolve(filtered);
+    //   });
+    // };
+
+    const filterCityTypes = useCallback((inputValue: string): SelectOption[] => {
+        if (!allCities || allCities.length === 0) {
+          return []; // Return empty array if no options loaded yet
+        }
+        const filtered = allCities.filter(type =>
+          type.toLowerCase().includes(inputValue.toLowerCase())
+        );
+        return filtered.map(type => ({ value: type, label: type }));
+      }, [allCities]);
+    
+      const loadCityOptions = useCallback((inputValue: string) =>
+        new Promise<SelectOption[]>(resolve => {
+          resolve(filterCityTypes(inputValue));
+        }),
+        [filterCityTypes]
+      );
+
+               
 
 
   const handleSubmit: SubmitHandler<T> = async (data) => {
@@ -76,6 +133,8 @@ function AuthForm<T extends FieldValues>({
       });
     }
   };
+
+
 
   return (
     <div className="flex flex-col gap-4">
@@ -128,62 +187,51 @@ function AuthForm<T extends FieldValues>({
                         />
                       ) 
                       : field.name === "food_type" ? (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger 
-                        aria-label="Select food type"
-                        className="border border-gray-400 rounded min-w-[400px] max-h-60">
-                          {typeof field.value === "string" && field.value
-                                            ? field.value
-                                            : "Select Food Type"}
-                          {/* {field.value || "Select Food Type"} */}
-                         </DropdownMenuTrigger>
-                        
-                        <DropdownMenuContent className="min-w-[200px] max-h-60 overflow-auto rounded-lg shadow-lg bg-white text-black p-2">
-                          {loading ? (
-                            <DropdownMenuItem disabled className="py-3 px-4 text-base">
-                              Loading...
-                            </DropdownMenuItem>
-                          ) : (
-                            foodTypes.map((option) => (
-                              <DropdownMenuItem
-                                key={option}
-                                onSelect={() => field.onChange(option)}
-                                className="py-3 px-4 text-base hover:bg-gray-100 cursor-pointer text-gray-600"
-                              >
-                                {option}
-                              </DropdownMenuItem>
-                            ))
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <AsyncSelect
+                              components={animatedComponents}
+                              isClearable
+                              isMulti 
+                              cacheOptions 
+                              defaultOptions 
+                              isLoading={loading}
+                              loadOptions={loadOptions} 
+                              value={(field.value || []).map((val: string) => ({ value: val, label: val }))} 
+                              onChange={(selectedOptions) => {
+                                // This correctly ensures an array of strings is passed to formField.onChange
+                                field.onChange(selectedOptions.map(option => option.value));
+                              }}
+                              onBlur={field.onBlur} // Important for react-hook-form validation
+                              placeholder="Type to search food types..."
+                              noOptionsMessage={() => "No matching food types"}
+                              loadingMessage={() => "Loading food types..."}
+                              // You might want to add custom styling props here
+                              className="react-select-container" // For overall container styling
+                              classNamePrefix="react-select" // For styling internal components
+                            />
                     ) 
                     : field.name === "city" ? (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger 
-                        aria-label="Select City"
-                        className="border border-gray-400 rounded min-w-[400px] max-h-60">
-                          {typeof field.value === "string" && field.value
-                                            ? field.value
-                                            : "Select City"}
-                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="min-w-[200px] max-h-60 overflow-auto rounded-lg shadow-lg bg-white text-black p-2">
-                          {loadingCities ? (
-                            <DropdownMenuItem disabled className="py-3 px-4 text-base">
-                              Loading...
-                            </DropdownMenuItem>
-                          ) : (
-                            cities.map((option) => (
-                              <DropdownMenuItem
-                                key={option}
-                                onSelect={() => field.onChange(option)}
-                                className="py-3 px-4 text-base hover:bg-gray-100 cursor-pointer text-gray-600"
-                              >
-                                {option}
-                              </DropdownMenuItem>
-                            ))
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <AsyncSelect
+                              components={animatedComponents}
+                              isClearable
+                              cacheOptions 
+                              defaultOptions
+                              isLoading={loadingCities}
+                              loadOptions={loadCityOptions}
+                              // value={field.value ? { value: field.value as string, label: field.value as string } : null}
+                              // onChange={(selectedOption) => {
+                              //   field.onChange(selectedOption ? selectedOption['value'] : null);
+                              // }}
+                              value={field.value ? { value: field.value as string, label: field.value as string } : null}   
+                              onChange={(selectedOption: SelectOption | null) => {
+                              field.onChange(selectedOption ? selectedOption.value : ''); 
+                            }}                            
+                              onBlur={field.onBlur} 
+                              placeholder="Type to search for city..."
+                              noOptionsMessage={() => "No matching cities"}
+                              loadingMessage={() => "Loading cities..."}
+                              className="react-select-container" 
+                              classNamePrefix="react-select" 
+                            />
                     ) 
                      :
                       (

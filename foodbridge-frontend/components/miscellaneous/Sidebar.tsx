@@ -18,6 +18,14 @@ const Sidebar : React.FC= ()=> {
               </svg>
               <span className="hidden md:inline">Profile</span>
           </Link>
+           {/* <Link to="#" className="flex items-center text-blue-500 font-semibold"> */}
+           <Link to="/view-more" className="flex items-center text-blue-500 font-semibold">
+              {/* <!-- User Icon --> */}
+              <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 10a4 4 0 100-8 4 4 0 000 8zm-6 8a6 6 0 1112 0H4z" />
+              </svg>
+              <span className="hidden md:inline">Donations</span>
+          </Link>
           <Link to="/donations-history" className="flex items-center text-blue-500 font-semibold">
               {/* <!-- History Icon (Clock) --> */}
               <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">

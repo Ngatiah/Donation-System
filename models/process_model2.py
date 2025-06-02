@@ -43,6 +43,24 @@ df['shelf_type'] = df['food_type'].map(shelf_map)
 le_food = LabelEncoder()
 df['food_type_encoded'] = le_food.fit_transform(df['food_type'])
 df.to_csv('preprocessed_donations_with_shelf_finale.csv', index=False)
+raw_cities = df['city'].dropna().astype(str).str.strip().str.title().unique()
+# all_food_types = df['food_type'].dropna().astype(str).str.strip().str.title().unique()
+# print(all_food_types)
+all_cities_tocoords = df[['city', 'lat', 'lng']].dropna().drop_duplicates()
+all_cities_tocoords['city'] = all_cities_tocoords['city'].astype(str).str.strip().str.title()
+# all_coords_to_cities = all_cities_tocoords.sort_values(by='city')
+all_coords_to_cities = all_cities_tocoords.sort_values(by='city').set_index('city')
+all_cities = sorted(raw_cities)
+joblib.dump(raw_cities, 'all_cities_finale.pkl')
+joblib.dump(all_coords_to_cities, 'all_cities_tocoords_finale.pkl')
+# city_to_check = "Nairobi"
+# if city_to_check in all_coords_to_cities['city'].values:
+#     print(f"{city_to_check} is present in all_coords_to_cities.")
+# else:
+#     print(f"{city_to_check} is NOT present in all_coords_to_cities.")
+
+# print(all_coords_to_cities)
+
 
 # === Simulate recipient data ===
 recipient_data = [
@@ -50,6 +68,13 @@ recipient_data = [
     {'food_type': 'beans', 'city': 'Mombasa', 'urgency': 'medium', 'required_quantity': 0.3},
     {'food_type': 'rice', 'city': 'Kisumu', 'urgency': 'low', 'required_quantity': 1.0},
 ]
+# food multiselection
+# recipient_data = [
+#     {'food_type': ['maize', 'rice'], 'city': 'Nairobi', 'urgency': 'high', 'required_quantity': 0.5},
+#     {'food_type': ['beans'], 'city': 'Mombasa', 'urgency': 'medium', 'required_quantity': 0.3},
+#     {'food_type': ['rice', 'dairy', 'maize'], 'city': 'Kisumu', 'urgency': 'low', 'required_quantity': 1.0},
+#     {'food_type': [], 'city': 'Eldoret', 'urgency': 'low', 'required_quantity': 0.8},
+# ]
 df_recipients = pd.DataFrame(recipient_data)
 df_recipients = df_recipients.merge(df[['city', 'lat', 'lng']], on='city', how='left')
 

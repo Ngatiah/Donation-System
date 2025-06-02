@@ -6,8 +6,9 @@ MODELS = {}
 def load_models():
     global MODELS
     base_path = os.path.join(settings.BASE_DIR, 'models')
-    MODELS['rf_model'] = joblib.load(os.path.join(base_path, 'match_model_finale.pkl'))
-    MODELS['le_food'] = joblib.load(os.path.join(base_path, 'food_encoder_finale.pkl'))
+    MODELS['rf_model'] = joblib.load(os.path.join(base_path, 'match_model_finalee2.pkl'))
+    # MODELS['le_food'] = joblib.load(os.path.join(base_path, 'food_encoder_finale.pkl'))
+    MODELS['le_food'] = joblib.load(os.path.join(base_path, 'all_food_types_list_finalee2.pkl'))
     MODELS['cities'] = joblib.load(os.path.join(base_path,'all_cities_finale.pkl'))
     # MODELS['urgency_encoder'] = joblib.load(os.path.join(base_path, 'urgency_encoder.pkl'))
 

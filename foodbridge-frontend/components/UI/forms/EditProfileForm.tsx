@@ -7,9 +7,12 @@ import type{
   } from "react-hook-form";
   import {useForm } from 'react-hook-form'
   import { ZodType } from "zod";
-  import {DropdownMenu,DropdownMenuItem,DropdownMenuContent,DropdownMenuTrigger} from '../DropdownMenu'
+  import React,{useCallback} from "react";
+  // import {DropdownMenu,DropdownMenuItem,DropdownMenuContent,DropdownMenuTrigger} from '../DropdownMenu'
   import { useNavigate } from "react-router-dom";
-  import {ChevronDown} from 'lucide-react'
+  // import {ChevronDown} from 'lucide-react'
+  import AsyncSelect from "react-select/async";
+  import makeAnimated from 'react-select/animated'
   import {
     Form,
     FormControl,
@@ -30,6 +33,11 @@ import type{
     defaultValues: T;
     onSubmit: (data: T) => Promise<{ success: boolean; error?: string }>;
   }
+
+  interface SelectOption{
+    value:string;
+    label:string;
+  }
   
   function EditProfileForm<T extends FieldValues>({
     schema,
@@ -37,13 +45,12 @@ import type{
     onSubmit,
   }: Props<T>) {
     const navigate = useNavigate();
-    const {foodTypes} = useDonationOptions()
+    const {foodTypes,loading} = useDonationOptions()
     const form: UseFormReturn<T> = useForm<T>({
       resolver: zodResolver(schema),
       defaultValues: defaultValues as DefaultValues<T>,
     });
   
-    
     const handleSubmit: SubmitHandler<T> = async (data) => {
       console.log("FORM DATA", data);
       const result = await onSubmit(data);
@@ -53,7 +60,7 @@ import type{
         console.error(result.error);
       }
     };
-  
+    
     const EditProfileFormFields = [
       "name",
       "contact_phone",
@@ -72,11 +79,31 @@ import type{
       acc[field] = FIELD_NAMES[field];
       return acc;
     }, {} as Record<typeof EditProfileFormFields[number], string>);
-
+    
     const r = form.watch("role" as Path<T>) as Role;
+    
     const visibleFields = r === "donor"
-    ? ["name", "contact_phone", "available"]
-    : ["name", "contact_phone", "food_type", "quantity", "available"];
+    ? ["name", "contact_phone"]
+    : ["name", "contact_phone", "food_type", "quantity"];
+    
+    const animatedComponents = makeAnimated()
+    const filterFoodTypes = useCallback((inputValue: string) => {
+             if (!inputValue) {
+                 return foodTypes.map(type => ({ value: type, label: type }));
+             }
+         
+             // Filter based on input value (case-insensitive)
+             return foodTypes
+               .filter(type => type.toLowerCase().includes(inputValue.toLowerCase()))
+               .map(type => ({ value: type, label: type }));
+           }, [foodTypes]); // Dependency on allFoodTypes to re-memoize if it changes
+         
+         
+    const loadOptions = useCallback((inputValue: string) =>
+             new Promise<SelectOption[]>(resolve => {
+                 resolve(filterFoodTypes(inputValue));
+             }),
+           [filterFoodTypes]);
 
     return (
       <div className="flex flex-col gap-4">
@@ -100,25 +127,27 @@ import type{
                     </FormLabel>
                     <FormControl>
                       {(fieldName === "food_type") ? (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger>
-                            <button className="form-input flex justify-between items-center">
-                              {/* {field.value || "Select"} */}
-                              {field.value}
-                              <ChevronDown className="h-4 w-4 ml-2" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent>
-                            {(foodTypes).map((option) => (
-                              <DropdownMenuItem
-                                key={option}
-                                onSelect={() => field.onChange(option)}
-                              >
-                                {option}
-                              </DropdownMenuItem>
-                            ))}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <AsyncSelect
+                              components={animatedComponents}
+                              isClearable
+                              isMulti 
+                              cacheOptions
+                              defaultOptions 
+                              isLoading={loading}
+                              loadOptions={loadOptions} // THE CALLBACK TO FETCH OPTIONS
+                              value={(field.value || []).map((val: string) => ({ value: val, label: val }))} // Pre-selects based on current form value (array of strings)
+                              onChange={(selectedOptions) => {
+                                // Update form field with array of selected option values
+                                field.onChange(selectedOptions.map(option => option.value));
+                              }}
+                              onBlur={field.onBlur} // Important for react-hook-form validation
+                              placeholder="Type to search food types..."
+                              noOptionsMessage={() => "No matching food types"}
+                              loadingMessage={() => "Loading food types..."}
+                              // You might want to add custom styling props here
+                              className="react-select-container" // For overall container styling
+                              classNamePrefix="react-select" // For styling internal components
+                            />
                       ) : (
                         <Input
                           // required

@@ -6,18 +6,19 @@ import type{
   UseFormReturn,
 } from "react-hook-form";
 import {useForm } from 'react-hook-form'
+import React,{useCallback} from "react";
 // import { ZodType } from "zod";
-import {DropdownMenu,DropdownMenuItem,DropdownMenuContent,DropdownMenuTrigger} from '../DropdownMenu'
+// import {DropdownMenu,DropdownMenuItem,DropdownMenuContent,DropdownMenuTrigger} from '../DropdownMenu'
 import { useNavigate } from "react-router-dom";
 import { useDonationOptions } from "../../hooks/useDonationOptions";
-import { useTimeRangeOptions } from "../../hooks/useTimeRange";
+// import { useTimeRangeOptions } from "../../hooks/useTimeRange";
 // import { useAvailabilityOptions } from "../../hooks/useAvailability";
 import { DonationFormData } from "../../lib/validation";
 import {
   Form,
   FormControl,
   FormField,
-  FormItem,
+  FormItem, 
   FormLabel,
   FormMessage,
 } from "../Form";
@@ -26,7 +27,8 @@ import { Button } from "../Button";
 import { FIELD_NAMES, FIELD_TYPES } from "../../constants";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {ZodSchema} from 'zod'
-
+import AsyncSelect from 'react-select/async'
+import makeAnimated from 'react-select/animated'
 
 interface Props {
   schema: ZodSchema;
@@ -34,6 +36,11 @@ interface Props {
   // schema: ZodType<DonationFormData>;
   defaultValues: DonationFormData;
   onSubmit: (data: DonationFormData) => Promise<{ success: boolean; error?: string }>;
+}
+
+interface SelectOption{
+  value:string;
+  label:string;
 }
 
 function DonationForm({
@@ -51,8 +58,38 @@ function DonationForm({
 
 
   const {foodTypes,loading} = useDonationOptions()
-  // const {timeRangeOptions,loadingTimeRanges} = useTimeRangeOptions();
-  // const {availabilityOptions,loadingAvailability} = useAvailabilityOptions()
+  const animatedComponents = makeAnimated()
+  // const filterFoodTypes = useCallback((inputValue: string) => {
+  //    if (!inputValue) {
+  //      return foodTypes.map(type => ({ value: type, label: type }));
+  //     }           
+               
+  // return foodTypes.filter(type => type.toLowerCase().includes(inputValue.toLowerCase()))
+  //                    .map(type => ({ value: type, label: type }));
+  //                }, [foodTypes]); //                
+                    
+  // const loadOptions = useCallback((inputValue: string) =>
+  //                  new Promise<SelectOption[]>(resolve => {
+  //                      resolve(filterFoodTypes(inputValue));
+  //                  }),
+  //                [filterFoodTypes]);
+
+  const filterFoodTypes = useCallback((inputValue: string): SelectOption[] => {
+    if (!foodTypes || foodTypes.length === 0) {
+      return []; // Return empty array if no options loaded yet
+    }
+    const filtered = foodTypes.filter(type =>
+      type.toLowerCase().includes(inputValue.toLowerCase())
+    );
+    return filtered.map(type => ({ value: type, label: type }));
+  }, [foodTypes]);
+
+  const loadOptions = useCallback((inputValue: string) =>
+    new Promise<SelectOption[]>(resolve => {
+      resolve(filterFoodTypes(inputValue));
+    }),
+    [filterFoodTypes]
+  );
 
   
   const handleSubmit: SubmitHandler<DonationFormData> = async (data) => {
@@ -65,13 +102,10 @@ function DonationForm({
     }
   };
 
-
   const donationFormFields = [
     "food_type",
     "quantity",
     "expiry_date",
-    // "availability",
-    // "time_range",
     "food_description", 
   ] as const;
 
@@ -112,33 +146,25 @@ function DonationForm({
                   )}
                   <FormControl>
                     {fieldName === "food_type" ? (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger 
-                        aria-label="Select food type"
-                        className="border border-gray-400 rounded min-w-[400px] max-h-60">
-                          {typeof field.value === "string" && field.value
-                                            ? field.value
-                                            : "Select Food Type"}
-                          {/* {field.value || "Select Food Type"} */}
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="min-w-[200px] max-h-60 overflow-auto rounded-lg shadow-lg bg-white text-black p-2">
-                          {loading ? (
-                            <DropdownMenuItem disabled className="py-3 px-4 text-base">
-                              Loading...
-                            </DropdownMenuItem>
-                          ) : (
-                            foodTypes.map((option) => (
-                              <DropdownMenuItem
-                                key={option}
-                                onSelect={() => field.onChange(option)}
-                                className="py-3 px-4 text-base hover:bg-gray-100 cursor-pointer text-gray-600"
-                              >
-                                {option}
-                              </DropdownMenuItem>
-                            ))
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                     <AsyncSelect
+                              cacheOptions 
+                              defaultOptions
+                              isLoading={loading}
+                              isClearable
+                              components={animatedComponents}
+                              loadOptions={loadOptions}
+                              // value={field.value ? { value: field.value, label: field.value } : null} 
+                              value={field.value ? { value: field.value as string, label: field.value as string } : null}   
+                              onChange={(selectedOption: SelectOption | null) => {
+                              field.onChange(selectedOption ? selectedOption.value : ''); 
+                            }}                 
+                              onBlur={field.onBlur}
+                              placeholder="Type to search food types..."
+                              noOptionsMessage={() => "No matching food types"}
+                              loadingMessage={() => "Loading food types..."}
+                              className="react-select-container" // For overall container styling
+                              classNamePrefix="react-select" // For styling internal components
+                            />
                     ) : fieldName === "food_description" ? (
                       <textarea
                         {...field}

@@ -14,7 +14,7 @@ export async function signUp({
   email:string,
   password:string,
   role:string,
-  food_type?:string,       
+  food_type?:string[],       
   quantity?:number,
   contact_phone:string,
   city : string

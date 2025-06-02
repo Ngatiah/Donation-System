@@ -1,14 +1,15 @@
 # urls.py
 from django.urls import path
-from .views import UserLogin,UserRegistration,DonationsMatch,UserLogout,UserProfile,switch_role,Dashboard,DonationOptions,CreateOrListDonation,EditProfile,TimeRangeOptionsView,AvailabilityListAPIView,DonationsHistory,CityOptions,TopUsers
+from .views import UserLogin,UserRegistration,DonationsMatch,UserLogout,UserProfile,switch_role,Dashboard,DonationOptions,CreateOrListDonation,EditProfile,TimeRangeOptionsView,AvailabilityListAPIView,DonationsHistory,CityOptions,TopUsers,DonationStatisticsView,ClaimDonationMatchView,RetrieveUpdateDestroyDonation
 
 urlpatterns = [
     path('', Dashboard.as_view(), name='home'),
-    path('donation-matches/', DonationsMatch.as_view(), name='donation-matches'),
     path('register/', UserRegistration.as_view(), name='register'),
     path('login/', UserLogin.as_view(), name='login'),
     path('logout/', UserLogout.as_view(), name='logout'),
     path('create-donations/', CreateOrListDonation.as_view(), name='create-donations'),
+    path('update-donations/<int:pk>/', RetrieveUpdateDestroyDonation.as_view(), name='donation-detail-update-delete'),
+    path('donation-matches/', DonationsMatch.as_view(), name='donation-matches'),
     path('donation-options/', DonationOptions.as_view(), name='donation-options'),
     path('donation-history/', DonationsHistory.as_view(), name='donation-history'),
     path('view-profile/', UserProfile.as_view(), name='view-profile'),
@@ -18,4 +19,9 @@ urlpatterns = [
     path('time-range-options/', TimeRangeOptionsView.as_view(), name='time-range-options'),
     path('cities/', CityOptions.as_view(), name='cities'),
     path('top-users/', TopUsers.as_view(), name='top-users'), 
+    path('statistics/', DonationStatisticsView.as_view(), name='donation-statistics'),
+
+    # recipients claiming donation matches
+    path('matches/<int:match_id>/claim/',ClaimDonationMatchView.as_view() , name='claim-donation'),
+
 ]

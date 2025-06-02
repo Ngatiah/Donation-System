@@ -31,7 +31,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
+# required by all auth
+# SITE_ID=1
 # Application definition
 
 INSTALLED_APPS = [
@@ -48,6 +49,17 @@ INSTALLED_APPS = [
     'knox',
     'corsheaders',
     'phonenumber_field',
+    'django_celery_beat', 
+
+    # 'django.contrib.sites',
+    # 'allauth',
+    # 'allauth.account',
+    # 'allauth.socialaccount',
+    # 'allauth.socialaccount.providers.google',
+
+    # 'dj_rest_auth',
+    # 'dj_rest_auth.registration', # If you also want registration endpoints
+
 
     'accounts',
     'donations',
@@ -87,6 +99,72 @@ WSGI_APPLICATION = 'FoodBridge.wsgi.application'
 ASGI_APPLICATION = 'FoodBridge.asgi.application'
 
 
+# AUTHENTICATION_BACKENDS = [
+#     # Default Django authentication backend for admin login (username/password)
+#     'django.contrib.auth.backends.ModelBackend',
+#     # `allauth` specific authentication methods, such as login by e-mail
+#     # 'allauth.account.auth_backends.AuthenticationBackend',
+# ]
+
+# Allauth general settings
+# ACCOUNT_AUTHENTICATION_METHOD = 'email' # or 'username_email' or 'username'
+# ACCOUNT_EMAIL_REQUIRED = True
+# ACCOUNT_UNIQUE_EMAIL = True
+# ACCOUNT_USERNAME_REQUIRED = False # Often set to False when using email as primary login
+# ACCOUNT_EMAIL_VERIFICATION = 'mandatory' # or 'optional' or 'none'
+# ACCOUNT_CONFIRM_EMAIL_ON_GET = True # Confirms email on direct click of verification link
+# ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3
+# ACCOUNT_LOGIN_ATTEMPTS_LIMIT = 5
+# ACCOUNT_LOGIN_ATTEMPTS_TIMEOUT = 300 # 5 minutes
+
+# # Allauth social account settings (for Google)
+# SOCIALACCOUNT_PROVIDERS = {
+#     'google': {
+#         # For more options, see https://docs.allauth.org/en/latest/socialaccount/providers/google.html
+#         'APP': {
+#             'client_id': 'YOUR_GOOGLE_WEB_CLIENT_ID.apps.googleusercontent.com', # From Google Cloud Console, type 'Web application'
+#             'secret': 'YOUR_GOOGLE_CLIENT_SECRET',
+#             'key': '' # Not typically used for Google
+#         },
+#         'SCOPE': [ # What data you request from Google
+#             'profile',
+#             'email',
+#         ],
+#         'AUTH_PARAMS': {
+#             'access_type': 'offline', # To get a refresh token for long-term access
+#         }
+#     }
+# }
+
+# LOGIN_URL = 'login'
+# LOGIN_REDIRECT_URL = '/'
+# ACCOUNT_LOGOUT_REDIRECT_URL = '/'
+
+#the  redis server
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0' # Default Redis URL
+# Where Celery stores task results 
+CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+# Crucial so that scheduled tasks run at the correct time
+CELERY_TIMEZONE = 'Africa/Nairobi'
+
+# Configure Celery Beat to use the database for scheduling
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+# Optional: You can define fixed schedules here, but using admin is often preferred.
+# CELERY_BEAT_SCHEDULE = {
+#     'cleanup-expired-donations-daily': {
+#         'task': 'donations.tasks.cleanup_expired_donations',
+#         'schedule': timedelta(days=1), # Run once a day
+#         # 'schedule': timedelta(minutes=5), # For testing, run every 5 minutes
+#         'args': (),
+#     },
+# }
+
+
+
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 DATABASES = {
@@ -119,9 +197,20 @@ AUTH_PASSWORD_VALIDATORS = [
 # Authentication options
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        # session-based
         'donations.auth.CookieTokenAuthentication',
+        # for api access
         'knox.auth.TokenAuthentication',
+        # SessionAuthentication if you want browsable API login or traditional Django session
+        # 'rest_framework.authentication.SessionAuthentication', # Recommended for DRF browsable API and allauth's session handling
         ),
+    # 'DEFAULT_PERMISSION_CLASSES': (
+    #     'rest_framework.permissions.IsAuthenticated',
+    # ),
+    # 'DEFAULT_RENDERER_CLASSES': (
+    #     'rest_framework.renderers.JSONRenderer',
+    #     'rest_framework.renderers.BrowsableAPIRenderer', # For browsable API
+    # ),
 
 }
 
@@ -135,6 +224,26 @@ REST_KNOX = {
     'EXPIRY_DATETIME_FORMAT': "%Y-%m-%d %H:%M:%S",
     'TOKEN_KEY_LENGTH': 15, 
 }
+
+
+# REST_AUTH = {
+#     'USE_JWT': False, # Set to True if you want JWT, but you're using Knox, so keep False
+#     'TOKEN_MODEL': 'knox.models.AuthToken', # Specify Knox as the token model
+#     # Specify the Knox serializer if you want custom token data
+#     'TOKEN_SERIALIZER': 'dj_rest_auth.serializers.KnoxSerializer',
+#     # For social logins to return Knox tokens
+#     'OLD_PASSWORD_FIELD_ENABLED': True, # Required for password change
+#     'LOGOUT_ON_PASSWORD_CHANGE': True,
+#     'PASSWORD_RESET_USE_SITES_DOMAIN': True, # For password reset emails
+#     'USER_DETAILS_SERIALIZER': 'users.serializers.CurrentUserSerializer', # Point to your user serializer if you have one
+#     # This is crucial for social login with tokens:
+#     'SOCIALACCOUNT_ADAPTER': 'dj_rest_auth.social_serializers.SocialAccountAdapter',
+# }
+
+# # Email backend for sending emails (for verification, password reset)
+# # You need to configure an actual email backend for production!
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # For development: prints emails to console
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' # For production, e.g. SendGrid, Mailgun
 
 
 # Internationalization

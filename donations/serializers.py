@@ -35,8 +35,15 @@ class AvailabilitySerializer(serializers.ModelSerializer):
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
     role = serializers.CharField(write_only=True)
-    required_food_type = serializers.CharField(required=True, allow_blank=True)
+    # required_food_type = serializers.CharField(required=True, allow_blank=True)
     required_quantity = serializers.IntegerField(required=False)
+    # multi-selection
+    required_food_type = serializers.ListField(
+        # Each item in the list is a CharField
+        child=serializers.CharField(max_length=255),
+        required=False, # but enforce for recipients in validate method
+        allow_empty=True # Allow an empty list initiall,y
+    )
     contact_phone = PhoneNumberField(required=True)
     city = serializers.CharField(required=True,allow_blank=True)
 
@@ -47,10 +54,14 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         role = validated_data.pop('role', None)
         contact_phone = validated_data.pop('contact_phone', None)
-        required_food_type = validated_data.pop('required_food_type', None)
+        # required_food_type = validated_data.pop('required_food_type', None)
+        required_food_type_list = validated_data.pop('required_food_type', [])
         required_quantity = validated_data.pop('required_quantity', 0)
         city = validated_data.pop('city', None)
         password = validated_data.pop('password')
+
+        print(f"DEBUG: required_food_type_list = {required_food_type_list}")
+        print(f"DEBUG: type(required_food_type_list) = {type(required_food_type_list)}")
   
 
         # assigning city to coords        
@@ -94,7 +105,8 @@ class RegisterSerializer(serializers.ModelSerializer):
             Recipient.objects.create(
                 user=user,
                 contact_phone=contact_phone,
-                required_food_type=required_food_type,
+                # required_food_type=required_food_type,
+                required_food_type=required_food_type_list,
                 required_quantity=required_quantity,
                 city=city,
                 lat=lat,
@@ -105,7 +117,9 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         role = data.get('role')
-        required_food_type = data.get('required_food_type', '').strip()
+        # required_food_type = data.get('required_food_type', '').strip()
+        required_food_type = data.get('required_food_type', [])
+
 
         if role == 'recipient':
             if not required_food_type:
@@ -113,14 +127,27 @@ class RegisterSerializer(serializers.ModelSerializer):
 
             _, le_food, _ ,_= get_matching_models() 
 
-            valid_food_types = list(le_food.classes_)
-
-            if required_food_type not in valid_food_types:
+            # valid_food_types = list(le_food.classes_)
+            valid_food_types = le_food
+            # Validate each food type in the list
+            invalid_types = []
+            for food_type in required_food_type:
+                if food_type.strip().lower() not in valid_food_types:
+                    invalid_types.append(food_type)
+            
+            if invalid_types:
                 raise serializers.ValidationError({
-                    "required_food_type": f"Invalid food type. Choose from: {', '.join(valid_food_types)}"
+                    "required_food_type": f"Invalid food type(s): '{', '.join(invalid_types)}'. Choose from: {', '.join(valid_food_types)}"
                 })
 
         return data
+
+        #     if required_food_type not in valid_food_types:
+        #         raise serializers.ValidationError({
+        #             "required_food_type": f"Invalid food type. Choose from: {', '.join(valid_food_types)}"
+        #         })
+
+        # return data
     
     def validate_city(self, value):
         _, _, cities, _ = get_matching_models()
@@ -163,25 +190,49 @@ class LoginSerializer(serializers.Serializer):
 class DonationSerializer(serializers.ModelSerializer):
     donor_name = serializers.SerializerMethodField(read_only=True)
     food_description = serializers.CharField(required=False,allow_blank=True)
+    # donor_contact_phone = serializers.SerializerMethodField(read_only=True)
     # availability = AvailabilitySerializer(many=True,required=False)
-    class Meta:
+    class Meta: 
         model = Donation
-        fields = ['id','food_type','food_description', 'quantity','expiry_date','donor_name']
+        # fields = ['id','food_type','food_description', 'quantity','expiry_date','donor_name','status']
+        fields = ['id','food_type','food_description', 'quantity','expiry_date','donor_name','is_claimed']
+
 
     def get_donor_name(self, obj):
         return obj.donor.user.name
 
     def get_food_description(self, obj):
-        # Safe default logic
         if not obj.food_description:
             return "No description provided."
 
-        # Custom formatting logic (you can adjust this)
+        # Custom formatting logic
         desc = obj.food_description.strip().capitalize()
         if len(desc) < 10:
             return f"{desc} (Too short — please provide more detail.)"
 
         return desc
+    
+    # def update(self, instance, validated_data):
+    #     if 'food_description' in validated_data:
+    #         if not validated_data['food_description'] or len(validated_data['food_description'].strip()) < 10:
+    #             # Option A: Save as empty string if it doesn't meet minimum length
+    #             instance.food_description = ""
+    #             # Or, if you want it to behave like "no description provided" on output,
+    #             # you might save it as null or handle it in your model's save method.
+    #         else:
+    #             instance.food_description = validated_data['food_description'].strip()
+        
+    #     # Call the super method to handle updates for all other fields
+    #     # that are directly mapped and present in validated_data
+    #     instance.food_type = validated_data.get('food_type', instance.food_type)
+    #     instance.quantity = validated_data.get('quantity', instance.quantity)
+    #     instance.expiry_date = validated_data.get('expiry_date', instance.expiry_date)
+    #     instance.is_claimed = validated_data.get('is_claimed', instance.is_claimed)
+
+    #     instance.save()
+    #     return instance
+    
+
     
    
 
@@ -189,7 +240,7 @@ class DonorSerializer(serializers.ModelSerializer):
     role = serializers.SerializerMethodField()
     donor_name = serializers.CharField(source='user.name', read_only=True)
     email = serializers.CharField(source='user.email', read_only=True)
-    contact_phone = PhoneNumberField(required=True)
+    contact_phone = PhoneNumberField()
     # city = serializers.SerializerMethodField()
     city = serializers.CharField(read_only=True)
 
@@ -247,9 +298,19 @@ class TopUserSerializer(serializers.Serializer):
     
 
 class DonationHistorySerializer(serializers.ModelSerializer):
-    # donor = DonationSerializer(read_only=True)
     donor_name = serializers.CharField(source="donor.user.name",read_only=True)
     recipient_name = serializers.CharField(source='recipient.user.name', read_only=True)
+    # donor_role = serializers.CharField(source="donor.user.role",read_only=True)
+    # recipient_role = serializers.CharField(source="recipient.user.role",read_only=True)
+    donor_contact_phone = serializers.CharField(source="donor.contact_phone", read_only=True)
+    recipient_contact_phone = serializers.CharField(source="recipient.contact_phone", read_only=True)
+
+    # donor_user = serializers.CharField(source="donor.user",read_only=True)
+    # recipient_user = serializers.CharField(source="recipient.user",read_only=True)
+
+
+    is_current_user_the_donor = serializers.SerializerMethodField()
+    is_current_user_the_recipient = serializers.SerializerMethodField()
 
     class Meta:
         model = DonationMatch
@@ -257,21 +318,74 @@ class DonationHistorySerializer(serializers.ModelSerializer):
             'id',
             'donor_name',
             'recipient_name',
+            'donor',
+            # 'donor_user',
+            'donor_contact_phone',
+            'recipient',
+            'recipient_contact_phone',
+            # 'recipient_user',
+            'donation',
             'food_type',
             'matched_quantity',
             'food_description',
             'expiry_date',
-            'created_at'
+            'created_at',
+            'is_claimed',
+            'is_current_user_the_donor',     
+            'is_current_user_the_recipient', 
         ]
 
+    def get_is_current_user_the_donor(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.donor.user == request.user
+        return False # If not authenticated, or no request, default to False
+
+    # Method to determine if the authenticated user is the recipient of this match
+    def get_is_current_user_the_recipient(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.recipient.user == request.user
+        return False #
+
+
+# class DonationMatchDashboardSerializer(serializers.ModelSerializer):
+#     donor_name = serializers.CharField(source="donor.user.name", read_only=True)
+#     recipient_name = serializers.CharField(source='recipient.user.name', read_only=True) # Will be 
+#     class Meta:
+#         model = DonationMatch
+#         fields = [
+#             'id',
+#             'donor_name',
+#             'recipient_name', 
+#             'food_type',
+#             'matched_quantity',
+#             'food_description',
+#             'expiry_date', 
+#             'created_at',
+#             'is_claimed', 
+#             'donation',
+#         ]
+
+
+# class FeedbackSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Feedback
+#         fields = ['id', 'match', 'submitted_by', 'submitted_for', 'rating', 'comments', 'created_at']
+#         read_only_fields = ['submitted_by', 'submitted_for', 'created_at']
 
 class ProfileSerializer(serializers.Serializer):
     user = serializers.SerializerMethodField()
+    # name = serializers.SerializerMethodField()
     role = serializers.SerializerMethodField()
     city = serializers.SerializerMethodField()
-    # city = serializers.CharField(read_only=True)
     contact_phone = serializers.SerializerMethodField()
-    required_food_type = serializers.SerializerMethodField()
+    # required_food_type = serializers.SerializerMethodField()
+    required_food_type = serializers.ListField(
+        child=serializers.CharField(max_length=255),
+        required=False, # Allow partial updates without sending this field
+        allow_empty=True
+    )
     required_quantity = serializers.SerializerMethodField()
     donor_profile = DonorSerializer(required=False, allow_null=True)
     recipient_profile = RecipientSerializer(required=False, allow_null=True)
@@ -284,16 +398,14 @@ class ProfileSerializer(serializers.Serializer):
             "email": obj.email,
             "role": obj.role,
     }
-
-    # def get_role(self,obj):
-    #     return obj.role
+           
     def get_role(self, obj):
         if getattr(obj, 'is_donor', False):
             return 'donor'
         elif getattr(obj, 'is_recipient', False):
             return 'recipient'
         return 'unknown'
-
+    
     def get_contact_phone(self,obj):
         if obj.role == 'donor' and hasattr(obj, 'donor_profile'):
             return str(obj.donor_profile.contact_phone)
@@ -301,8 +413,6 @@ class ProfileSerializer(serializers.Serializer):
             return str(obj.recipient_profile.contact_phone)
         return None
     
-    # def get_city(self, obj):
-    #     return getattr(obj, 'city', None)
 
     def get_city(self, obj): # obj here is the User instance
         if obj.is_donor and hasattr(obj, 'donor_profile'):
@@ -316,10 +426,10 @@ class ProfileSerializer(serializers.Serializer):
             return str(obj.recipient_profile.required_quantity)
         return None
     
-    def get_required_food_type(self,obj):
+    def get_required_food_type(self, obj):
         if obj.is_recipient and hasattr(obj, 'recipient_profile'):
-            return str(obj.recipient_profile.required_food_type)
-        return None
+            return obj.recipient_profile.required_food_type
+        return []
     
     def update(self, instance, validated_data):
         user = instance

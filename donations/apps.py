@@ -1,6 +1,7 @@
 from django.apps import AppConfig
 
 
+
 class DonationsConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'donations'
@@ -9,3 +10,4 @@ class DonationsConfig(AppConfig):
     def ready(self):
         from .match_utils import load_models
         load_models()
+       

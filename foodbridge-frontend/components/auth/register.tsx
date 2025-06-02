@@ -12,7 +12,8 @@ const SignUp : React.FC = () => (
       email: "",
       password: "",
       role : 'donor',
-      food_type :'',
+      // food_type :'',
+      food_type :[],
       quantity :0,
       contact_phone:'',
       city:''

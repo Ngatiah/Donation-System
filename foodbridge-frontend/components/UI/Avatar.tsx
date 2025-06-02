@@ -4,14 +4,14 @@ import { getInitials } from '../lib/util'
 import { useAuthStore } from '../../store/authStore'
 
 interface User{
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-
+   role:string;
+    name:string;
 }
 interface ProfileData {
-  user: User;
+  donor_profile:string;
+  recipient_profile:string;
+  user:User
+  
 }
 
 const CustomAvatar : React.FC = ()=> {
@@ -32,7 +32,6 @@ const CustomAvatar : React.FC = ()=> {
             });
     
             const data = await res.json();
-    
             if (!res.ok) {
               setError(data?.detail || "Failed to fetch profile");
               return;
@@ -54,14 +53,16 @@ const CustomAvatar : React.FC = ()=> {
       if (error) return <div>Error: {error}</div>;
       if (!profile) return null;
       const { user} = profile;
-      const { name} = user;
+      // const {name,role} = user
+      const profileName = user.name
   
   return (
   <Flex gap="2">
 	<Avatar
 	src="..."
   className=''
-	fallback={getInitials(name)}
+	fallback={getInitials(profileName)}
+  // fallback={profileName}
   radius='full'
   size='5'
 	/>
