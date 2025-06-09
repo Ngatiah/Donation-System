@@ -37,6 +37,7 @@ from django.conf import settings
 from geopy.distance import geodesic
 from rest_framework.exceptions import NotFound
 from .matching import get_matching_models
+from .utils import notify_donor_and_recipients_of_deletion
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -193,6 +194,7 @@ def get_ai_scored_donations(recipient, rf_model, le_food, top_n=5):
     # Initial filtering of potential donations from the database
     potential_donations = Donation.objects.filter(
         is_claimed=False,
+        is_deleted=False,
         quantity__gt=0,
         expiry_date__gte=timezone.now().date(),
         donor__lat__isnull=False,
@@ -372,82 +374,37 @@ class CreateOrListDonation(generics.ListCreateAPIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
+
 class RetrieveUpdateDestroyDonation(generics.RetrieveUpdateDestroyAPIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = DonationSerializer
-    queryset = Donation.objects.all()
 
-    def get_queryset(self):
-        return Donation.objects.filter(donor__user=self.request.user)
-        
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
 
-class ClaimDonationMatchView(APIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [TokenAuthentication]
-
-    def post(self, request, match_id):
-        user = request.user
-        role = user.role
-        if role != 'recipient':
-            return Response(
-                {"error": "Only recipients can claim donations."},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
+        # Perform a soft delete first
+        instance.is_deleted = True
+        instance.save()
+        logger.info(f"Donation ID {instance.id} soft-deleted by donor.")
         try:
-            recipient = Recipient.objects.get(user=user)
-        except Recipient.DoesNotExist:
-            return Response(
-                {"error": "Recipient profile not found."},
-                status=status.HTTP_404_NOT_FOUND
+            notifications = notify_donor_and_recipients_of_deletion(
+                instance, "Removed by donor" 
             )
+            channel_layer = get_channel_layer()
+            if channel_layer:
+                for notification in notifications:
+                    async_to_sync(channel_layer.group_send)(
+                        notification['group_name'],
+                        notification # The dictionary already has 'type', 'message', 'notification_type', 'data'
+                    )
+            else:
+                logger.warning("Channel layer not available. Notifications for donor deletion will not be sent.")
+        except Exception as e:
+            logger.error(f"Error sending deletion notifications for Donation ID {instance.id}: {e}", exc_info=True)
 
-        with transaction.atomic():
-            # Get the DonationMatch and lock it to prevent race conditions
-            # select_for_update ensures that only one transaction can modify this row at a time
-            try:
-                # Ensure the recipient is claiming their own unclaimed match
-                donation_match = DonationMatch.objects.select_for_update().get(
-                    id=match_id,
-                    recipient=recipient, 
-                    is_claimed=False 
-                )
-            except DonationMatch.DoesNotExist:
-                return Response(
-                    {"error": "Donation match not found or already claimed."},
-                    status=status.HTTP_404_NOT_FOUND
-                )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
-            donation = donation_match.donation
-
-            # Check if the related donation has already been claimed
-            if donation.is_claimed:
-                return Response(
-                    {"error": "This donation has already been claimed by another recipient."},
-                    status=status.HTTP_409_CONFLICT # Conflict status
-                )
-
-            # Mark the specific DonationMatch as claimed
-            donation_match.is_claimed = True
-            donation_match.save()
-
-            # Mark the original Donation as claimed
-            donation.is_claimed = True
-            donation.save()
-
-            # Invalidate claimed donation from others
-            DonationMatch.objects.filter(
-                donation=donation,
-                is_claimed=False
-            ).exclude(id=donation_match.id).delete()
-
-            return Response(
-                {"message": "Donation claimed successfully!",
-                 "claimed_match": DonationHistorySerializer(donation_match).data},
-                status=status.HTTP_200_OK
-            )
-        
 
 class DonationsMatch(APIView):
     serializer_class = DonationSerializer
@@ -512,6 +469,7 @@ class DonationsMatch(APIView):
             
             donations = Donation.objects.filter(
                 is_claimed=False,
+                is_deleted=False,
                 quantity__gt=0,
                 expiry_date__gte=timezone.now().date(),
                 donor__lat__isnull=False,
@@ -549,7 +507,6 @@ class DonationsMatch(APIView):
                     quantity_ratio = min(1.0, donation.quantity / required_quantity)
                 else:
                     # If required_quantity somehow becomes 0 (should be prevented by validation)
-                    # Match the logic from your training script for this edge case.
                     quantity_ratio = 1.0 if donation.quantity > 0 else 0.0
 
 
@@ -565,7 +522,7 @@ class DonationsMatch(APIView):
 
                 match_inputs.append({
                     'food_match': food_match,
-                    'exact_quantity_match': exact_quantity_match, # New feature
+                    'exact_quantity_match': exact_quantity_match, 
                     'quantity_ratio': quantity_ratio,   
                     'distance': distance_km,
                 })
@@ -609,21 +566,17 @@ class DonationsMatch(APIView):
                             'matched_quantity': existing_match.matched_quantity,
                             'food_description': existing_match.food_description,
                             'expiry_date': existing_match.expiry_date.isoformat(),
+                            'is_claimed': existing_match.is_claimed,
+                            'is_missed': existing_match.is_missed,
                         })
                         continue
 
                     WEIGHT_FOOD = 0.35
-                    WEIGHT_EXACT_QTY = 0.25 # Significant boost for exactness
+                    WEIGHT_EXACT_QTY = 0.25 
                     WEIGHT_PARTIAL_QTY = 0.15 # Contribution for any partial fulfillment
                     WEIGHT_DISTANCE = 0.25
 
         
-                    # match_score = int((
-                    #     match_input['food_match'] * 0.4 +
-                    #     match_input['quantity_match'] * 0.3 +
-                    #     max(0, 1 - (match_input['distance'] / 50)) * 0.3 # Re-calculate score using the features
-                    # ) * 100)
-
                     # scaling match score out of 100
                     match_score = int((
                         match_input['food_match'] * WEIGHT_FOOD +
@@ -656,6 +609,8 @@ class DonationsMatch(APIView):
                         'matched_quantity': actual_matched_quantity,
                         'food_description': donation.food_description,
                         'expiry_date': new_match.expiry_date.isoformat(),
+                        'is_claimed': new_match.is_claimed,
+                        'is_missed': new_match.is_missed,
                     })
 
                     notifications_to_send.append({
@@ -708,71 +663,78 @@ class DonationsMatch(APIView):
             logger.exception("Donation matching failed for user %s: %s", request.user, str(e))
             return Response({'error': 'An unexpected error occurred during matching.'}, status=500)
 
-# class ClaimDonationMatchView(APIView):
-#     permission_classes = [IsAuthenticated]
-#     authentication_classes = [TokenAuthentication]
+class ClaimDonationMatchView(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
 
-#     def post(self, request, match_id):
-#         user = request.user
-#         role = user.role
-#         if role != 'recipient':
-#             return Response(
-#                 {"error": "Only recipients can claim donations."},
-#                 status=status.HTTP_403_FORBIDDEN
-#             )
+    def post(self, request, match_id):
+        user = request.user
+        role = user.role
+        if role != 'recipient':
+            return Response(
+                {"error": "Only recipients can claim donations."},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
-#         try:
-#             recipient = Recipient.objects.get(user=user)
-#         except Recipient.DoesNotExist:
-#             return Response(
-#                 {"error": "Recipient profile not found."},
-#                 status=status.HTTP_404_NOT_FOUND
-#             )
+        try:
+            recipient = Recipient.objects.get(user=user)
+        except Recipient.DoesNotExist:
+            return Response(
+                {"error": "Recipient profile not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
-#         with transaction.atomic():
-#             # Get the DonationMatch and lock it to prevent race conditions
-#             # select_for_update ensures that only one transaction can modify this row at a time
-#             try:
-#                 # Ensure the recipient is claiming their own unclaimed match
-#                 donation_match = DonationMatch.objects.select_for_update().get(
-#                     id=match_id,
-#                     recipient=recipient, 
-#                     is_claimed=False 
-#                 )
-#             except DonationMatch.DoesNotExist:
-#                 return Response(
-#                     {"error": "Donation match not found or already claimed."},
-#                     status=status.HTTP_404_NOT_FOUND
-#                 )
+        with transaction.atomic():
+            # Get the DonationMatch and lock it to prevent race conditions
+            # select_for_update ensures that only one transaction can modify this row at a time
+            try:
+                # Ensure the recipient is claiming their own unclaimed match
+                donation_match = DonationMatch.objects.select_for_update().get(
+                    id=match_id,
+                    recipient=recipient, 
+                    is_claimed=False 
+                )
+            except DonationMatch.DoesNotExist:
+                return Response(
+                    {"error": "Donation match not found or already claimed."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
 
-#             donation = donation_match.donation
+            donation = donation_match.donation
 
-#             # Check if the related donation has already been claimed
-#             if donation.is_claimed:
-#                 return Response(
-#                     {"error": "This donation has already been claimed by another recipient."},
-#                     status=status.HTTP_409_CONFLICT # Conflict status
-#                 )
+            # Check if the related donation has already been claimed
+            if donation.is_claimed:
+                return Response(
+                    {"error": "This donation has already been claimed by another recipient."},
+                    status=status.HTTP_409_CONFLICT # Conflict status
+                )
 
-#             # Mark the specific DonationMatch as claimed
-#             donation_match.is_claimed = True
-#             donation_match.save()
+            # Mark the specific DonationMatch as claimed
+            donation_match.is_claimed = True
+            donation_match.save()
 
-#             # Mark the original Donation as claimed
-#             donation.is_claimed = True
-#             donation.save()
+            # Mark the original Donation as claimed
+            donation.is_claimed = True
+            donation.save()
 
-#             # Invalidate claimed donation from others
-#             DonationMatch.objects.filter(
-#                 donation=donation,
-#                 is_claimed=False
-#             ).exclude(id=donation_match.id).delete()
+            # Invalidate claimed donation for others and delete
+            # DonationMatch.objects.filter(
+            #     donation=donation,
+            #     is_claimed=False
+            # ).exclude(id=donation_match.id).delete()
 
-#             return Response(
-#                 {"message": "Donation claimed successfully!",
-#                  "claimed_match": DonationHistorySerializer(donation_match).data},
-#                 status=status.HTTP_200_OK
-#             )
+            # Invalidate claimed donations for others but track as missed in their  history
+            DonationMatch.objects.filter(
+                donation=donation,
+                is_claimed=False
+            ).exclude(id=donation_match.id).update(is_missed=True)
+
+
+            return Response(
+                {"message": "Donation claimed successfully!",
+                 "claimed_match": DonationHistorySerializer(donation_match).data},
+                status=status.HTTP_200_OK
+            )
 
 
 # @api_view(['PATCH'])

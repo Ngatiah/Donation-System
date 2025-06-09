@@ -64,9 +64,17 @@ export const signInSchema = z.object({
   password: z.string().min(8,"Invalid password"),
 });
 
+// / time_range: z.object({
+  //   from: z.string(),
+  //   until: z.string(),
+  //   label: z.string()
+  //   // .min(1, "Please select a time range"),
+
+  // }),
+
+  // food_type: z.array(z.string()).default([]),
 
 export const donationSchema = z.object({
-  // food_type: z.array(z.string()).default([]),
   food_type: z.string().default(''),
   food_description: z.string().default(""),
   quantity: z.preprocess(
@@ -74,13 +82,7 @@ export const donationSchema = z.object({
   z.number().min(0, "Quantity must be a positive number")
 ),
   expiry_date: z.coerce.date(),
-  // time_range: z.object({
-  //   from: z.string(),
-  //   until: z.string(),
-  //   label: z.string()
-  //   // .min(1, "Please select a time range"),
 
-  // }),
 });
 
 export type DonationFormData = z.infer<typeof donationSchema>;

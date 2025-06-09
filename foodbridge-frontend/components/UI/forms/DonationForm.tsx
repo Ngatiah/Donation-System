@@ -34,6 +34,7 @@ interface Props {
   schema: ZodSchema;
   // schema: ZodTypeAny;
   // schema: ZodType<DonationFormData>;
+  type: "DONATION" | "EDIT_DONATION";
   defaultValues: DonationFormData;
   onSubmit: (data: DonationFormData) => Promise<{ success: boolean; error?: string }>;
 }
@@ -47,6 +48,7 @@ function DonationForm({
   schema,
   defaultValues,
   onSubmit,
+  type
 }: Props) {
   const navigate = useNavigate();
   const form: UseFormReturn<DonationFormData> = useForm<DonationFormData>({
@@ -174,37 +176,6 @@ function DonationForm({
                         placeholder="Enter a brief description of the food..."
                       />
                     ) 
-                    // :  fieldName === 'time_range' ? (
-                    //   <DropdownMenu>
-                    //   <DropdownMenuTrigger 
-                    //     aria-label="Select time slot"
-                    //     className="border border-gray-400 rounded min-w-[400px] max-h-100"
-                    //     // asChild
-                    //   >
-                    //     {/* {field.value?.label ?? "Select Time Range"} */}
-                    //     {typeof field.value === "object" && field.value !== null && "label" in field.value
-                    //                 ? field.value.label
-                    //                 : "Select Time Range"}
-                    //   </DropdownMenuTrigger>
-                    //   <DropdownMenuContent className="min-w-[200px] max-h-60 overflow-auto rounded-lg shadow-lg bg-white text-black p-2">
-                    //     {loadingTimeRanges ? (
-                    //       <DropdownMenuItem disabled className="py-3 px-4 text-base">
-                    //         Loading...
-                    //       </DropdownMenuItem>
-                    //     ) : (
-                    //       timeRangeOptions.map((option) => (
-                    //         <DropdownMenuItem
-                    //           key={option.from}
-                    //           onSelect={() => field.onChange(option)}
-                    //           className="py-3 px-4 text-base hover:bg-gray-100 cursor-pointer text-gray-600"
-                    //         >
-                    //           {option.label}
-                    //         </DropdownMenuItem>
-                    //       ))
-                    //     )}
-                    //   </DropdownMenuContent>
-                    // </DropdownMenu>
-                    // ) 
                     :(                   
                       <Input
                         required
@@ -228,7 +199,8 @@ function DonationForm({
           ))}
 
           <Button type="submit" className="form-btn">
-            Donate
+            {/* Donate */}
+            {type === "EDIT_DONATION" ? "Update Donation" : "Donate"}
           </Button>
         </form>
       </Form>

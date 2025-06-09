@@ -154,14 +154,15 @@ CELERY_TIMEZONE = 'Africa/Nairobi'
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 # Optional: You can define fixed schedules here, but using admin is often preferred.
-# CELERY_BEAT_SCHEDULE = {
-#     'cleanup-expired-donations-daily': {
-#         'task': 'donations.tasks.cleanup_expired_donations',
-#         'schedule': timedelta(days=1), # Run once a day
-#         # 'schedule': timedelta(minutes=5), # For testing, run every 5 minutes
-#         'args': (),
-#     },
-# }
+CELERY_BEAT_SCHEDULE = {
+    'cleanup-expired-donations-daily': {
+        'task': 'donations.tasks.cleanup_expired_donations',
+        'schedule': timedelta(days=1), # Run once a day
+        # 'schedule': timedelta(minutes=5), # For testing, run every 5 minutes
+        'args': (),
+        'options': {'queue': 'default'} # Optional: specify a queue
+    },
+}
 
 
 
@@ -293,4 +294,42 @@ CHANNEL_LAYERS = {
             "hosts": [('127.0.0.1', 6379)],
         },
     },
+}
+
+# settings.py
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {asctime} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple'
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO', # You might want to change this to DEBUG temporarily
+            'propagate': False,
+        },
+        'FoodBridge': { # Make sure you have a logger for your app
+            'handlers': ['console'],
+            'level': 'DEBUG', # <--- SET THIS TO DEBUG
+            'propagate': False,
+        },
+        '': { # Root logger
+            'handlers': ['console'],
+            'level': 'DEBUG', # <--- OR SET THIS TO DEBUG
+        }
+    }
 }

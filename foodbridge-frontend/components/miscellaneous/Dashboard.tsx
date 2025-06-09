@@ -7,6 +7,11 @@ import NotificationBell from '../notifications/NotificationBell'
 import UploadedDonations from '../donations/UploadedDonations';
 import AllMatches from '../donations/AllMatches'; 
 import {DropdownMenu,Button} from '@radix-ui/themes'
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+import { Doughnut } from "react-chartjs-2";
+
+ChartJS.register(ArcElement, Tooltip, Legend);
+
 interface TopUser {
     name: string;
     total_quantity_kg: number;
@@ -31,6 +36,9 @@ interface DonationMatch {
     expiry_date: string;
     created_at: string;
     is_claimed: boolean;
+    is_missed: boolean;
+    is_donation_deleted?: boolean;
+
 }
 
 interface Donation {
@@ -40,6 +48,10 @@ interface Donation {
     expiry_date: string;
     food_description?: string;
     created_at: string;
+    donor_name:string;
+    is_claimed:boolean;
+    is_deleted:boolean;
+
 }
 
 interface DashboardStatistics {
@@ -216,6 +228,24 @@ const Dashboard: React.FC = () => {
         });
     };
 
+     const handleDonationUpdated = (updatedDonation: Donation) => {
+        setDashData(prevDashData => {
+            if (!prevDashData) return null;
+            const updatedDonationsList = prevDashData.donations.map(d =>
+                d.id === updatedDonation.id ? updatedDonation : d
+            );
+            return { ...prevDashData, donations: updatedDonationsList };
+        });
+    };
+
+    const handleDonationDeleted = (deletedDonationId: number) => {
+        setDashData(prevDashData => {
+            if (!prevDashData) return null;
+            const filteredDonations = prevDashData.donations.filter(d => d.id !== deletedDonationId);
+            return { ...prevDashData, donations: filteredDonations };
+        });
+    };
+
 
     if (loading) return <div className="animate-pulse text-gray-500">Loading dashboard...</div>
     if (error) return <div>Error: {error}</div>;
@@ -230,15 +260,92 @@ const Dashboard: React.FC = () => {
       return <div>Error: User role not found in profile data. Please log in.</div>;
     }
 
-    // Filter unclaimed matches for recipients specifically for the dashboard display
-    // const unclaimedRecipientMatches = all_matches_history.filter(match =>
-    //    profile &&  match.recipient_name  profile.recipient_name && !match.is_claimed
-    // );
-    const unclaimedRecipientMatches = all_matches_history.filter(match =>
-       match.recipient_name && !match.is_claimed
+    // filtering unclaimed matches
+    const unclaimedAndUnmissedRecipientMatches = all_matches_history.filter(match =>
+       match.recipient_name && !match.is_claimed && !match.is_missed && !match.is_donation_deleted
     );
+
     
-    const visibleDonatons = donations.slice(0,3)
+  const visibleDonations = donations.slice(0,3).filter(donation => !donation.is_deleted)
+  function getDoughnutDataFromStats(stats: DashboardStatistics, role: string) {
+  if (role === 'donor') {
+    // const claimed = stats.claimed_donations || 0;
+    // const total = stats.total_donations || 0;
+    // const unclaimed = total - claimed;
+
+    return {
+      labels: ['Total Donations Contributed','Total Donations Today','Claimed Donations', 'Total Recipients','Avg. Donations Contributed'],
+      datasets: [{
+        data: [
+            // claimed, 
+            // unclaimed
+            stats.total_donations || 0,
+            stats.donations_today ||0,
+            stats.claimed_donations || 0,
+            stats.total_recipients,
+            stats.average_donation || 0
+
+            
+            ],
+        // backgroundColor: ['#4caf50', '#f44336'],
+        backgroundColor: [
+                '#3f51b5', 
+                '#00bcd4', 
+                '#4caf50', 
+                '#ff9800', 
+                '#9c27b0'  
+                ]
+                    }]
+    };
+  } else if (role === 'admin') {
+    return {
+      labels: ['Total Platform Received', 'Received Today','Total Donors','Total Recipients','Avg. Donations'],
+      datasets: [{
+        data: [
+          stats.total_platform_received || 0,
+          stats.platform_received_today || 0,
+          stats.total_donors || 0,
+          stats.total_recipients || 0,
+          stats.average_donation || 0
+
+        ],
+        // backgroundColor: ['#3f51b5', '#00bcd4'],
+       backgroundColor: [
+            '#3f51b5', // Indigo – Total donations
+            '#00bcd4', // Cyan – Today's donations
+            '#4caf50', // Green – Total donors
+            '#ff9800', // Orange – Total recipients
+            '#9c27b0'  // Purple – Average donations (analytical, balanced)
+            ]
+      }]
+    };
+  } else if(role === 'recipient') {
+    return {
+      labels: ['Total Received','Total Received Today','Claimed Today','Total Donors','Avg. Donations Received'],
+      datasets: [{
+        data: [
+          stats.total_donations || 0,
+          stats.donations_today || 0,
+          stats.claimed_donations || 0,
+          stats.total_donors || 0,
+          stats.average_donation || 0
+
+        ],
+        // backgroundColor: ['#8bc34a', '#ffc107'],
+        backgroundColor: [
+            '#3f51b5', // Indigo – Total donations
+            '#00bcd4', // Cyan – Today's donations
+            '#4caf50', // Green – Total donors
+            '#ff9800', // Orange – Total recipients
+            '#9c27b0'  // Purple – Average donations (analytical, balanced)
+            ]
+      }]
+    };
+  }else return null
+}
+
+const chartData = getDoughnutDataFromStats(stats, profile.role);
+
 
 
     return (
@@ -298,15 +405,19 @@ const Dashboard: React.FC = () => {
 
                 {/* render donations or matches */}
                 <div>
-                    {role === 'donor' && <UploadedDonations donations={visibleDonatons}/>}
+                    {role === 'donor' && 
+                        <UploadedDonations 
+                        donations={visibleDonations}
+                        onDonationDeleted={handleDonationDeleted}
+                        onDonationUpdated={handleDonationUpdated}
+                        auth={{token : token}}
+                        
+                        />}
 
-                    {/* unclaimed donation matches for recipient - */}
                     {role === 'recipient' && (
-                        // Pass only the unclaimed matches to AllMatches for the dashboard preview
                         <AllMatches
                             profile={profile}
-                            initialMatches={unclaimedRecipientMatches} 
-                            // initialMatches={all_matches_history} 
+                            initialMatches={unclaimedAndUnmissedRecipientMatches} 
                             onClaimSuccess={handleClaimSuccess}
                         />
                     )}
@@ -315,7 +426,7 @@ const Dashboard: React.FC = () => {
                </div>
                         
                 {/* Top Users list based on role */}
-                <div className="p-4 col-span-1">
+                 {/* <div className="p-4 col-span-1"> 
                         <h3 className="font-semibold mb-2">
                             {role === 'donor' ? 'Top Recipients' : 'Top Donors'}</h3>
                         <ul className="space-y-2">
@@ -331,7 +442,7 @@ const Dashboard: React.FC = () => {
                                 <li className="text-sm text-gray-500 text-center">No top {role === 'donor' ? 'recipients' : 'donors'} data available.</li>
                             )}
                         </ul>
-                    </div>
+                    </div> */}
 
             </section>
 
@@ -339,7 +450,11 @@ const Dashboard: React.FC = () => {
             <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="bg-white p-4 rounded shadow col-span-2">
                     <h3 className="font-semibold mb-2">Statistics</h3>
-                    <div className="h-48 bg-gray-200 flex items-center justify-center">[Chart Placeholder]</div>
+                    <div className="h-100 bg-gray-200 flex items-center justify-center w-200">
+                        {/* [Chart Placeholder] */}
+                        <Doughnut data={chartData} />
+
+                        </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 col-span-1">

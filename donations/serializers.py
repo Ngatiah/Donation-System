@@ -4,7 +4,9 @@ from .models import Donor,Recipient,DonationMatch,Donation,Availability
 from .matching import get_matching_models
 from phonenumber_field.serializerfields import PhoneNumberField
 from django.contrib.auth import get_user_model
-
+from .utils import re_evaluate_matches_for_donation 
+import logging 
+logger = logging.getLogger(__name__)
 User = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
     """
@@ -180,11 +182,14 @@ class LoginSerializer(serializers.Serializer):
 
     def validate(self, data):
         user = authenticate(email=data['email'], password=data['password'])
-        if user and user.is_active:
-            # return user
-            return {'user': user}
-        raise serializers.ValidationError("Invalid credentials")
-        # return Response({"error": "User with this email already exists."}, status=status.HTTP_400_BAD_REQUEST)
+        if user is None:
+            # If authentication fails, raise a ValidationError.
+            raise serializers.ValidationError("Invalid credentials provided.")
+
+        if not user.is_active:
+            raise serializers.ValidationError("User account is inactive.")
+
+        return {'user': user}
 
 
 class DonationSerializer(serializers.ModelSerializer):
@@ -196,7 +201,6 @@ class DonationSerializer(serializers.ModelSerializer):
         model = Donation
         # fields = ['id','food_type','food_description', 'quantity','expiry_date','donor_name','status']
         fields = ['id','food_type','food_description', 'quantity','expiry_date','donor_name','is_claimed']
-
 
     def get_donor_name(self, obj):
         return obj.donor.user.name
@@ -212,29 +216,44 @@ class DonationSerializer(serializers.ModelSerializer):
 
         return desc
     
-    # def update(self, instance, validated_data):
-    #     if 'food_description' in validated_data:
-    #         if not validated_data['food_description'] or len(validated_data['food_description'].strip()) < 10:
-    #             # Option A: Save as empty string if it doesn't meet minimum length
-    #             instance.food_description = ""
-    #             # Or, if you want it to behave like "no description provided" on output,
-    #             # you might save it as null or handle it in your model's save method.
-    #         else:
-    #             instance.food_description = validated_data['food_description'].strip()
-        
-    #     # Call the super method to handle updates for all other fields
-    #     # that are directly mapped and present in validated_data
-    #     instance.food_type = validated_data.get('food_type', instance.food_type)
-    #     instance.quantity = validated_data.get('quantity', instance.quantity)
-    #     instance.expiry_date = validated_data.get('expiry_date', instance.expiry_date)
-    #     instance.is_claimed = validated_data.get('is_claimed', instance.is_claimed)
+    def update(self, instance, validated_data):
+        logger.info(f"DonationSerializer update called for Donation ID: {instance.id}")
+        logger.debug(f"Validated data: {validated_data}")
 
-    #     instance.save()
-    #     return instance
-    
+        # Store original values for potential comparison
+        original_food_type = instance.food_type
+        original_quantity = instance.quantity
+        original_expiry_date = instance.expiry_date
+        original_food_description = instance.food_description
 
-    
-   
+        # Update specific fields
+        instance.food_type = validated_data.get('food_type', instance.food_type)
+        instance.quantity = validated_data.get('quantity', instance.quantity)
+        instance.expiry_date = validated_data.get('expiry_date', instance.expiry_date)
+
+        # Handle food_description if present in validated_data
+        if 'food_description' in validated_data:
+            instance.food_description = validated_data['food_description'] # Use validated_data directly
+
+        instance.save()
+        logger.info(f"Donation ID {instance.id} saved after update.")
+
+        # --- CRITICAL ADDITION: Trigger match re-evaluation ---
+        # This will be called whenever a donation is updated.
+        # Only call re_evaluate if match-relevant fields changed (optimization)
+        if (original_food_type != instance.food_type or
+            original_quantity != instance.quantity or
+            original_expiry_date != instance.expiry_date or
+            original_food_description != instance.food_description):
+            try:
+                re_evaluate_matches_for_donation(instance)
+                logger.info(f"Triggered match re-evaluation for Donation ID: {instance.id} due to relevant changes.")
+            except Exception as e:
+                logger.error(f"Error during match re-evaluation for Donation ID {instance.id}: {e}", exc_info=True)
+        else:
+            logger.info(f"Donation ID: {instance.id} updated, but no match-relevant fields changed. Skipping re-evaluation.")
+
+        return instance
 
 class DonorSerializer(serializers.ModelSerializer):
     role = serializers.SerializerMethodField()
@@ -308,6 +327,8 @@ class DonationHistorySerializer(serializers.ModelSerializer):
     # donor_user = serializers.CharField(source="donor.user",read_only=True)
     # recipient_user = serializers.CharField(source="recipient.user",read_only=True)
 
+    # New field to indicate if the *original donation* for this match is deleted
+    is_donation_deleted = serializers.BooleanField(source='donation.is_deleted', read_only=True)
 
     is_current_user_the_donor = serializers.SerializerMethodField()
     is_current_user_the_recipient = serializers.SerializerMethodField()
@@ -331,8 +352,10 @@ class DonationHistorySerializer(serializers.ModelSerializer):
             'expiry_date',
             'created_at',
             'is_claimed',
+            'is_missed',
             'is_current_user_the_donor',     
             'is_current_user_the_recipient', 
+            'is_donation_deleted'
         ]
 
     def get_is_current_user_the_donor(self, obj):
@@ -375,10 +398,12 @@ class DonationHistorySerializer(serializers.ModelSerializer):
 #         read_only_fields = ['submitted_by', 'submitted_for', 'created_at']
 
 class ProfileSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True) # Expose user ID
     user = serializers.SerializerMethodField()
-    # name = serializers.SerializerMethodField()
+    name = serializers.CharField(required=False)
     role = serializers.SerializerMethodField()
     city = serializers.SerializerMethodField()
+    email = serializers.EmailField(read_only=True)
     contact_phone = serializers.SerializerMethodField()
     # required_food_type = serializers.SerializerMethodField()
     required_food_type = serializers.ListField(
@@ -435,23 +460,63 @@ class ProfileSerializer(serializers.Serializer):
         user = instance
         # role = user.role
 
-        if user.is_donor:
-            donor_data = validated_data.get('donor_profile')
-            if hasattr(user, 'donor_profile'):
+        if 'name' in validated_data:
+            user.name = validated_data['name']
+            user.save() # Save the user instance if name changed
+
+        # Handle donor profile updates
+        donor_data = validated_data.get('donor_profile')
+        if donor_data is not None: # Check if donor_profile data was sent in the request
+            if hasattr(user, 'donor_profile') and user.donor_profile:
+                # Update existing donor profile
                 donor_serializer = DonorSerializer(user.donor_profile, data=donor_data, partial=True)
+                donor_serializer.is_valid(raise_exception=True)
+                donor_serializer.save() # No need to pass user again if profile exists and is related
+            elif user.is_donor: # Only create if user is a donor and profile doesn't exist
+                # Create new donor profile
+                donor_serializer = DonorSerializer(data={**donor_data, 'user': user.id})
+                donor_serializer.is_valid(raise_exception=True)
+                donor_serializer.save(user=user) # Link to user
             else:
-                donor_serializer = DonorSerializer(data={**donor_data, "user": user.id})
-            donor_serializer.is_valid(raise_exception=True)
-            donor_serializer.save(user=user)
+                logger.warning(f"Attempt to update donor_profile for non-donor user {user.id}")
 
-        elif user.is_recipient:
-            recipient_data = validated_data.get('recipient_profile')
-            if hasattr(user, 'recipient_profile'):
+
+        # Handle recipient profile updates
+        recipient_data = validated_data.get('recipient_profile')
+        if recipient_data is not None: # Check if recipient_profile data was sent
+            if hasattr(user, 'recipient_profile') and user.recipient_profile:
+                # Update existing recipient profile
                 recipient_serializer = RecipientSerializer(user.recipient_profile, data=recipient_data, partial=True)
+                recipient_serializer.is_valid(raise_exception=True)
+                recipient_serializer.save() # No need to pass user again
+            elif user.is_recipient: # Only create if user is a recipient and profile doesn't exist
+                # Create new recipient profile
+                recipient_serializer = RecipientSerializer(data={**recipient_data, 'user': user.id})
+                recipient_serializer.is_valid(raise_exception=True)
+                recipient_serializer.save(user=user) # Link to user
             else:
-                recipient_serializer = RecipientSerializer(data={**recipient_data, "user": user.id})
-            recipient_serializer.is_valid(raise_exception=True)
-            recipient_serializer.save(user=user)
+                logger.warning(f"Attempt to update recipient_profile for non-recipient user {user.id}")
 
-        return user
+
+        return user # Return the updated user instance
+
+        # if user.is_donor:
+        #     donor_data = validated_data.get('donor_profile')
+        #     if hasattr(user, 'donor_profile'):
+        #         donor_serializer = DonorSerializer(user.donor_profile, data=donor_data, partial=True)
+        #     else:
+        #         donor_serializer = DonorSerializer(data={**donor_data, "user": user.id})
+        #     donor_serializer.is_valid(raise_exception=True)
+        #     donor_serializer.save(user=user)
+
+        # elif user.is_recipient:
+        #     recipient_data = validated_data.get('recipient_profile')
+        #     if hasattr(user, 'recipient_profile'):
+        #         recipient_serializer = RecipientSerializer(user.recipient_profile, data=recipient_data, partial=True)
+        #     else:
+        #         recipient_serializer = RecipientSerializer(data={**recipient_data, "user": user.id})
+        #     recipient_serializer.is_valid(raise_exception=True)
+        #     recipient_serializer.save(user=user)
+
+        # return user
 

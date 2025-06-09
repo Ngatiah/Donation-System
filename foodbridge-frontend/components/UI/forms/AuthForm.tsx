@@ -15,6 +15,7 @@ import {toast} from '../../hooks/use-toast'
 import AsyncSelect from 'react-select/async';
 import { useNavigate } from "react-router-dom";
 import {PhoneInput} from '../PhoneInput'
+import {useState} from 'react'
 // import {DropdownMenu,DropdownMenuItem,DropdownMenuContent,DropdownMenuTrigger} from '../DropdownMenu'
 import {
   Form,
@@ -55,6 +56,7 @@ function AuthForm<T extends FieldValues>({
 }: Props<T>) {
   const navigate = useNavigate();
   const isSignIn = type === "SIGN_IN";
+  const [apiError,setApiError] = useState<string | null>(null)
   const form: UseFormReturn<T> = useForm<T>({
     resolver: zodResolver(schema),
     defaultValues: defaultValues as DefaultValues<T>,
@@ -92,28 +94,46 @@ function AuthForm<T extends FieldValues>({
     //   });
     // };
 
-    const filterCityTypes = useCallback((inputValue: string): SelectOption[] => {
-        if (!allCities || allCities.length === 0) {
-          return []; // Return empty array if no options loaded yet
-        }
-        const filtered = allCities.filter(type =>
-          type.toLowerCase().includes(inputValue.toLowerCase())
-        );
-        return filtered.map(type => ({ value: type, label: type }));
-      }, [allCities]);
+    // const filterCityTypes = useCallback((inputValue: string): SelectOption[] => {
+    //     if (!allCities || allCities.length === 0) {
+    //       return []; // Return empty array if no options loaded yet
+    //     }
+    // const filtered = allCities.filter(type =>
+    //       type.toLowerCase().includes(inputValue.toLowerCase())
+    //     );
+    //     return filtered.map(type => ({ value: type, label: type }));
+    //   }, [allCities]);
     
-      const loadCityOptions = useCallback((inputValue: string) =>
-        new Promise<SelectOption[]>(resolve => {
-          resolve(filterCityTypes(inputValue));
-        }),
-        [filterCityTypes]
-      );
+    //   const loadCityOptions = useCallback((inputValue: string) =>
+    //     new Promise<SelectOption[]>(resolve => {
+    //       resolve(filterCityTypes(inputValue));
+    //     }),
+    //     [filterCityTypes]
+    //   );
+
+  const filterCityTypes = useCallback((inputValue: string) => {
+  if (!inputValue) {
+     return allCities.map(type => ({ value: type, label: type }));
+         }
+    // Filter based on input value (case-insensitive)
+    return allCities
+        .filter(type => type.toLowerCase().includes(inputValue.toLowerCase()))
+               .map(type => ({ value: type, label: type }));
+        }, [allCities]);
+             
+             
+    const loadCityOptions = useCallback((inputValue: string) =>
+                 new Promise<SelectOption[]>(resolve => {
+                     resolve(filterCityTypes(inputValue));
+                 }),
+        [filterCityTypes]);
 
                
 
 
   const handleSubmit: SubmitHandler<T> = async (data) => {
     console.log("FORM DATA", data);
+    setApiError(null)
 
     const result = await onSubmit(data);
 
@@ -131,6 +151,8 @@ function AuthForm<T extends FieldValues>({
         description: result.error,
         variant: "destructive",
       });
+      setApiError(result.error || `An unexpected error occurred during ${type.toLowerCase()}.`);
+      console.error(`${type} failed:`, result.error);
     }
   };
 
@@ -284,7 +306,14 @@ function AuthForm<T extends FieldValues>({
               )}
             />
           )}
+          
+          {apiError && (
+            <div className="text-red-500 text-center font-medium mt-4">
+              {apiError}
+            </div>
+          )}
 
+          
           <Button type="submit" className="form-btn">
             {isSignIn ? "Sign In" : "Sign Up"}
           </Button>

@@ -147,7 +147,9 @@ export async function signInWithCredentials({
     const data = await res.json();
 
     if (!res.ok) {
-      return { success: false, error: data?.detail || "Invalid credentials" };
+      // return { success: false, error: data?.detail || "Invalid credentials" };
+      const errorMessage = data?.detail || (data?.non_field_errors && data.non_field_errors[0]) || "Invalid credentials provided.";
+      return { success: false, error: errorMessage };
     }if (typeof data.token !== 'string') {
       return { success: false, error: "Invalid token received" };
     }
