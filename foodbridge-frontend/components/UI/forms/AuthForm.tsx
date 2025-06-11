@@ -9,7 +9,7 @@ import type{
 import {useForm } from 'react-hook-form'
 import { ZodType } from "zod";
 import {Link} from 'react-router-dom'
-import {toast} from '../../hooks/use-toast'
+import {useToast} from '../../hooks/use-toast'
 // import{ toast } from'react-hot-toast';
 // import CustomAsyncSelect  from "../CustomSelect";
 import AsyncSelect from 'react-select/async';
@@ -55,6 +55,7 @@ function AuthForm<T extends FieldValues>({
   type,
 }: Props<T>) {
   const navigate = useNavigate();
+  const {toast} = useToast()
   const isSignIn = type === "SIGN_IN";
   const [apiError,setApiError] = useState<string | null>(null)
   const form: UseFormReturn<T> = useForm<T>({
@@ -317,6 +318,15 @@ function AuthForm<T extends FieldValues>({
           <Button type="submit" className="form-btn">
             {isSignIn ? "Sign In" : "Sign Up"}
           </Button>
+
+          {isSignIn && (
+            <p className="text-center text-sm mt-2">
+              <Link to="/forgot-password" className="text-primary hover:underline">
+                Forgot Password?
+              </Link>
+            </p>
+          )}
+
         </form>
       </Form>
 

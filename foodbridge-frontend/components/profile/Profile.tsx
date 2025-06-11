@@ -22,6 +22,7 @@ interface ProfileData {
   // user: User;
   // name:string;
   role: string;
+  emal: string;
   contact_phone: string;
   // required_food_type: string;
   required_quantity: string;
@@ -70,7 +71,7 @@ const Profile: React.FC<ProfileData> = () => {
   if (error) return <div>Error: {error}</div>;
   if (!profile) return null;
   
-  const {role,contact_phone,recipient_profile,donor_profile} = profile;
+  const {role,contact_phone,recipient_profile,donor_profile,email} = profile;
   const reqFood = recipient_profile?.required_food_type;
   const reqQuantity = recipient_profile?.required_quantity;
   const name = recipient_profile ? recipient_profile.recipient_name : donor_profile ? donor_profile.donor_name : ''
@@ -93,6 +94,8 @@ const Profile: React.FC<ProfileData> = () => {
                 {/* <p className="text-sm text-gray-400">📍 Hyderabad</p> */}
 
                 <p className="text-sm text-gray-300 capitalize">{role}</p>
+                <p className="text-sm text-gray-300 capitalize">{email}</p>
+
                 {/* <p className="text-sm text-gray-400">📍 Hyderabad</p> */}
 
                 <p className="text-sm text-gray-400">📞 {contact_phone}</p>

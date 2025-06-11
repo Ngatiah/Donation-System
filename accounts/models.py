@@ -40,7 +40,6 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     # role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='donor')
     is_donor = models.BooleanField(default=False)
     is_recipient = models.BooleanField(default=False)
-     
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)

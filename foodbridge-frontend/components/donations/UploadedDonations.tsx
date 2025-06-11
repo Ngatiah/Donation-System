@@ -231,7 +231,7 @@ const UploadedDonations: React.FC<UploadedDonationsProps> = ({ donations, onDona
                         
                          <p className="text-sm text-gray-700">Quantity: {donation.quantity} kg</p>
                          <p className="text-sm text-gray-600 italic mt-1">{donation.food_description}</p>
-                         <p className="text-xs text-gray-500 mt-1">Expires: {new Date(donation.expiry_date).toLocaleDateString()}</p>
+                         {/* <p className="text-xs text-gray-500 mt-1">Expires: {new Date(donation.expiry_date).toLocaleDateString()}</p> */}
 
 
                         {/* actions buttons */}

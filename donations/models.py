@@ -10,8 +10,6 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 # from django.contrib.postgres.fields import ArrayField # If you are ONLY using PostgreSQL
 
-
-
 # Create your models here.
 class Availability(models.Model):
     day_of_week = models.CharField(

@@ -3,6 +3,8 @@ import './App.css'
 import { Route, Routes, Navigate,useLocation } from 'react-router-dom'
 import Dashboard from '../components/miscellaneous/Dashboard'
 import SignUp from '../components/auth/register'
+import ForgotPassword from '../components/auth/ForgotPassword'
+// import ResetForm from '../components/auth/ResetForm'
 import SignIn from '../components/auth/login'
 import Profile from '../components/profile/Profile'
 import EditProfile from '../components/profile/EditProfile'
@@ -16,7 +18,9 @@ import EditDonation from '../components/donations/EditDonation'
 
 const App: React.FC = () => {
   const location = useLocation()
-  const isAuth = location.pathname === '/login' || location.pathname === '/register'; 
+  // const isAuth = location.pathname === '/login' || location.pathname === '/register'; 
+  const isAuth = ['/login', '/register', '/forgot-password'].includes(location.pathname);
+
   return (
     <div className="flex">
       {!isAuth && <Sidebar/>}
@@ -33,6 +37,7 @@ const App: React.FC = () => {
       <Route path="register" element={
           <SignUp />
       } />
+      <Route path="forgot-password" element={<ForgotPassword />} />
       <Route path="home" element={
           <Dashboard />
       } />

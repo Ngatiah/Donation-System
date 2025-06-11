@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import CustomAvatar from '../UI/Avatar'
 import {  Plus } from 'lucide-react'
+import toast from 'react-hot-toast'
 import { Link,useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import NotificationBell from '../notifications/NotificationBell'
@@ -9,6 +10,7 @@ import AllMatches from '../donations/AllMatches';
 import {DropdownMenu,Button} from '@radix-ui/themes'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
+// import {handleDownloadReport} from '../lib/actions/report'
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -234,7 +236,7 @@ const Dashboard: React.FC = () => {
             const updatedDonationsList = prevDashData.donations.map(d =>
                 d.id === updatedDonation.id ? updatedDonation : d
             );
-            return { ...prevDashData, donations: updatedDonationsList };
+            return {...prevDashData, donations: updatedDonationsList };
         });
     };
 
@@ -245,6 +247,56 @@ const Dashboard: React.FC = () => {
             return { ...prevDashData, donations: filteredDonations };
         });
     };
+
+    // const handleDownloadReport = async () => {
+    //     const response = await fetch('http://localhost:8003/FoodBridge/donations/generate-report/', {
+    //         method: 'GET',
+    //         headers: {
+    //         'Authorization': `Token ${token}`,
+    //         }
+    //     });
+
+    //     if (response.ok) {
+    //         const blob = await response.blob();
+    //         const url = window.URL.createObjectURL(blob);
+    //         const a = document.createElement('a');
+    //         a.href = url;
+    //         a.download = 'donation_report.pdf';
+    //         a.click();
+    //         window.URL.revokeObjectURL(url);
+    //     } else {
+    //         toast.error('Failed to download report');
+    //     }
+    //     };
+//     const handleDownloadReport = async () => {
+//     const response = await fetch('http://localhost:8003/FoodBridge/donations/generate-report/', {
+//         method: 'GET',
+//         headers: {
+//             'Authorization': `Token ${token}`,
+//         }
+//     });
+
+//     if (!response.ok) {
+//         toast.error('Failed to download report');
+//         return;
+//     }
+
+//     const blob = await response.blob();
+    
+//     // Check blob type
+//     console.log('Blob type:', blob.type);  // Should be 'application/pdf'
+    
+//     const url = window.URL.createObjectURL(blob);
+//     const a = document.createElement('a');
+//     a.href = url;
+//     a.download = 'donation_report.pdf';
+//     document.body.appendChild(a);
+//     a.click();
+//     a.remove();
+//     window.URL.revokeObjectURL(url);
+// };
+
+
 
 
     if (loading) return <div className="animate-pulse text-gray-500">Loading dashboard...</div>
@@ -380,6 +432,9 @@ const chartData = getDoughnutDataFromStats(stats, profile.role);
                                 <DropdownMenu.Item onClick={()=>navigate('/view-profile')}>
                                   Profile
                                 </DropdownMenu.Item>
+                                {/* <DropdownMenu.Item onClick={handleDownloadReport}>
+                                  Download Report
+                                </DropdownMenu.Item> */}
                                 <DropdownMenu.Separator/>
                                 <DropdownMenu.Item onClick={()=>navigate('/logout')}>
                                     Logout
