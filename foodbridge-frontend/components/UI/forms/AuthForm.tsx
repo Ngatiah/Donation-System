@@ -1,21 +1,23 @@
-import React, {  useCallback } from 'react'; 
-import type{
+import { useCallback } from "react";
+import { toast } from "../../hooks/use-toast";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+import makeAnimated from "react-select/animated";
+import type {
   DefaultValues,
   FieldValues,
   Path,
   SubmitHandler,
   UseFormReturn,
 } from "react-hook-form";
-import {useForm } from 'react-hook-form'
-import { ZodType } from "zod";
-import {Link} from 'react-router-dom'
-import {useToast} from '../../hooks/use-toast'
+import { useForm } from "react-hook-form";
+import { Link } from "react-router-dom";
+import { useToast } from "../../hooks/use-toast";
 // import{ toast } from'react-hot-toast';
 // import CustomAsyncSelect  from "../CustomSelect";
-import AsyncSelect from 'react-select/async';
+import AsyncSelect from "react-select/async";
 import { useNavigate } from "react-router-dom";
-import {PhoneInput} from '../PhoneInput'
-import {useState} from 'react'
+import { useState } from "react";
 // import {DropdownMenu,DropdownMenuItem,DropdownMenuContent,DropdownMenuTrigger} from '../DropdownMenu'
 import {
   Form,
@@ -27,13 +29,13 @@ import {
 } from "../Form";
 import { Input } from "../Input";
 import { Button } from "../Button";
+import { PhoneInput } from "../PhoneInput";
 import { FIELD_NAMES, FIELD_TYPES } from "../../constants";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useDonationOptions } from "../../hooks/useDonationOptions";
 import { useCity } from "../../hooks/useCity";
-import makeAnimated from 'react-select/animated'
+import Logo from "../../../components/miscellaneous/Logo";
+import { ZodType } from "zod";
 
-// import { FileDiff } from "lucide-react";
 interface SelectOption {
   value: string;
   label: string;
@@ -46,7 +48,7 @@ interface Props<T extends FieldValues> {
   type: "SIGN_IN" | "SIGN_UP";
 }
 
-type Role = 'donor' | 'recipient';
+type Role = "donor" | "recipient";
 
 function AuthForm<T extends FieldValues>({
   schema,
@@ -55,89 +57,92 @@ function AuthForm<T extends FieldValues>({
   type,
 }: Props<T>) {
   const navigate = useNavigate();
-  const {toast} = useToast()
+  const { toast } = useToast();
   const isSignIn = type === "SIGN_IN";
-  const [apiError,setApiError] = useState<string | null>(null)
+  const [apiError, setApiError] = useState<string | null>(null);
   const form: UseFormReturn<T> = useForm<T>({
     resolver: zodResolver(schema),
     defaultValues: defaultValues as DefaultValues<T>,
   });
-  const role = form.watch('role' as Path<T>) as Role;
-  const {foodTypes,loading} = useDonationOptions()
-  const { cities : allCities, loadingCities } = useCity();
-  const animatedComponents = makeAnimated()
-  const filterFoodTypes = useCallback((inputValue: string) => {
-  if (!inputValue) {
-     return foodTypes.map(type => ({ value: type, label: type }));
-         }
-    // Filter based on input value (case-insensitive)
-    return foodTypes
-        .filter(type => type.toLowerCase().includes(inputValue.toLowerCase()))
-               .map(type => ({ value: type, label: type }));
-        }, [foodTypes]);
-             
-             
-    const loadOptions = useCallback((inputValue: string) =>
-                 new Promise<SelectOption[]>(resolve => {
-                     resolve(filterFoodTypes(inputValue));
-                 }),
-        [filterFoodTypes]);
-               
+  const role = form.watch("role" as Path<T>) as Role;
+  const { foodTypes, loading } = useDonationOptions();
+  const { cities: allCities, loadingCities } = useCity();
+  const animatedComponents = makeAnimated();
+  const filterFoodTypes = useCallback(
+    (inputValue: string) => {
+      if (!inputValue) {
+        return foodTypes.map((type) => ({ value: type, label: type }));
+      }
+      // Filter based on input value (case-insensitive)
+      return foodTypes
+        .filter((type) => type.toLowerCase().includes(inputValue.toLowerCase()))
+        .map((type) => ({ value: type, label: type }));
+    },
+    [foodTypes]
+  );
 
-    //   const cityOptions = allCities.map(city => ({ value: city, label: city }));
-    //   const loadCityOptions = (inputValue: string) => {
-    //   return new Promise<SelectOption[]>(resolve => {
-    //     // Filter cities based on inputValue (optional)
-    //     const filtered = allCities
-    //       .filter(city => city.toLowerCase().includes(inputValue.toLowerCase()))
-    //       .map(city => ({ value: city, label: city }));
-    //     resolve(filtered);
-    //   });
-    // };
+  const loadOptions = useCallback(
+    (inputValue: string) =>
+      new Promise<SelectOption[]>((resolve) => {
+        resolve(filterFoodTypes(inputValue));
+      }),
+    [filterFoodTypes]
+  );
 
-    // const filterCityTypes = useCallback((inputValue: string): SelectOption[] => {
-    //     if (!allCities || allCities.length === 0) {
-    //       return []; // Return empty array if no options loaded yet
-    //     }
-    // const filtered = allCities.filter(type =>
-    //       type.toLowerCase().includes(inputValue.toLowerCase())
-    //     );
-    //     return filtered.map(type => ({ value: type, label: type }));
-    //   }, [allCities]);
-    
-    //   const loadCityOptions = useCallback((inputValue: string) =>
-    //     new Promise<SelectOption[]>(resolve => {
-    //       resolve(filterCityTypes(inputValue));
-    //     }),
-    //     [filterCityTypes]
-    //   );
+  //   const cityOptions = allCities.map(city => ({ value: city, label: city }));
+  //   const loadCityOptions = (inputValue: string) => {
+  //   return new Promise<SelectOption[]>(resolve => {
+  //     // Filter cities based on inputValue (optional)
+  //     const filtered = allCities
+  //       .filter(city => city.toLowerCase().includes(inputValue.toLowerCase()))
+  //       .map(city => ({ value: city, label: city }));
+  //     resolve(filtered);
+  //   });
+  // };
 
-  const filterCityTypes = useCallback((inputValue: string) => {
-  if (!inputValue) {
-     return allCities.map(type => ({ value: type, label: type }));
-         }
-    // Filter based on input value (case-insensitive)
-    return allCities
-        .filter(type => type.toLowerCase().includes(inputValue.toLowerCase()))
-               .map(type => ({ value: type, label: type }));
-        }, [allCities]);
-             
-             
-    const loadCityOptions = useCallback((inputValue: string) =>
-                 new Promise<SelectOption[]>(resolve => {
-                     resolve(filterCityTypes(inputValue));
-                 }),
-        [filterCityTypes]);
+  // const filterCityTypes = useCallback((inputValue: string): SelectOption[] => {
+  //     if (!allCities || allCities.length === 0) {
+  //       return []; // Return empty array if no options loaded yet
+  //     }
+  // const filtered = allCities.filter(type =>
+  //       type.toLowerCase().includes(inputValue.toLowerCase())
+  //     );
+  //     return filtered.map(type => ({ value: type, label: type }));
+  //   }, [allCities]);
 
-               
+  //   const loadCityOptions = useCallback((inputValue: string) =>
+  //     new Promise<SelectOption[]>(resolve => {
+  //       resolve(filterCityTypes(inputValue));
+  //     }),
+  //     [filterCityTypes]
+  //   );
 
+  const filterCityTypes = useCallback(
+    (inputValue: string) => {
+      if (!inputValue) {
+        return allCities.map((type) => ({ value: type, label: type }));
+      }
+      // Filter based on input value (case-insensitive)
+      return allCities
+        .filter((type) => type.toLowerCase().includes(inputValue.toLowerCase()))
+        .map((type) => ({ value: type, label: type }));
+    },
+    [allCities]
+  );
+
+  const loadCityOptions = useCallback(
+    (inputValue: string) =>
+      new Promise<SelectOption[]>((resolve) => {
+        resolve(filterCityTypes(inputValue));
+      }),
+    [filterCityTypes]
+  );
 
   const handleSubmit: SubmitHandler<T> = async (data) => {
     console.log("FORM DATA", data);
-    setApiError(null)
+    setApiError(null);
 
     const result = await onSubmit(data);
-
     if (result.success) {
       toast({
         title: "Success",
@@ -152,194 +157,180 @@ function AuthForm<T extends FieldValues>({
         description: result.error,
         variant: "destructive",
       });
-      setApiError(result.error || `An unexpected error occurred during ${type.toLowerCase()}.`);
+      setApiError(
+        result.error ||
+          `An unexpected error occurred during ${type.toLowerCase()}.`
+      );
       console.error(`${type} failed:`, result.error);
     }
   };
 
-
+  // ... (keep your existing callbacks and handlers)
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold text-white">
-        {isSignIn
-          ? "Welcome Back to the FoodBridge"
-          : "Create Your Donations Account"}
-      </h1>
-      <p className="text-light-100">
-        {isSignIn
-          ? "Welcome back! Log in to continue accessing the vast network of donors and recipients. Stay updated on real-time donation opportunities and help make a difference in people's lives."
+    <div className="min-h-screen  flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="flex justify-center">
+          <Logo size="lg" /> {/* Using the Logo component */}
+        </div>
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          {isSignIn ? "Welcome Back to FoodBridge" : "Create Your Account"}
+        </h2>
+        <p className="mt-2 text-center text-sm text-gray-600">
+          {isSignIn
+            ? "Log in to connect with donors and recipients, track donations, and make a difference."
+            : "Join our community to reduce food waste and help those in need."}
+        </p>
+      </div>
 
-          : "Create your Donations account and become a part of our compassionate community. "
-          }
-      </p>
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(handleSubmit)}
-          className="w-full space-y-6"
-        >
-          {Object.keys(defaultValues)
-        .filter((field) => field !== "role")
-        .map((field) => {
-          if ((field === 'food_type' || field === 'quantity') && role !== 'recipient') {
-            return null;
-          }
-          return (
-            <FormField
-              key={field}
-              control={form.control}
-              name={field as Path<T>}
-              render={({ field }) => {
-                return (
-                  <FormItem>
-                   {field.name !== 'food_type' && field.name !== 'city' && <FormLabel className="capitalize">
-                      {FIELD_NAMES[field.name as keyof typeof FIELD_NAMES]}
-                    </FormLabel>}
-                   {/* <FormLabel className="capitalize">
-                      {FIELD_NAMES[field.name as keyof typeof FIELD_NAMES]}
-                    </FormLabel> */}
-                    <FormControl>
-                    {field.name === 'contact_phone' ? (
-                        <PhoneInput
-                          {...field}
-                          onChange={(e) => {
-                            // Remove leading 0 if entered
-                            const val = e.target.value.replace(/^0/, "");
-                            field.onChange(val);
-                          }}
-                        />
-                      ) 
-                      : field.name === "food_type" ? (
-                      <AsyncSelect
-                              components={animatedComponents}
-                              isClearable
-                              isMulti 
-                              cacheOptions 
-                              defaultOptions 
-                              isLoading={loading}
-                              loadOptions={loadOptions} 
-                              value={(field.value || []).map((val: string) => ({ value: val, label: val }))} 
-                              onChange={(selectedOptions) => {
-                                // This correctly ensures an array of strings is passed to formField.onChange
-                                field.onChange(selectedOptions.map(option => option.value));
-                              }}
-                              onBlur={field.onBlur} // Important for react-hook-form validation
-                              placeholder="Type to search food types..."
-                              noOptionsMessage={() => "No matching food types"}
-                              loadingMessage={() => "Loading food types..."}
-                              // You might want to add custom styling props here
-                              className="react-select-container" // For overall container styling
-                              classNamePrefix="react-select" // For styling internal components
-                            />
-                    ) 
-                    : field.name === "city" ? (
-                      <AsyncSelect
-                              components={animatedComponents}
-                              isClearable
-                              cacheOptions 
-                              defaultOptions
-                              isLoading={loadingCities}
-                              loadOptions={loadCityOptions}
-                              // value={field.value ? { value: field.value as string, label: field.value as string } : null}
-                              // onChange={(selectedOption) => {
-                              //   field.onChange(selectedOption ? selectedOption['value'] : null);
-                              // }}
-                              value={field.value ? { value: field.value as string, label: field.value as string } : null}   
-                              onChange={(selectedOption: SelectOption | null) => {
-                              field.onChange(selectedOption ? selectedOption.value : ''); 
-                            }}                            
-                              onBlur={field.onBlur} 
-                              placeholder="Type to search for city..."
-                              noOptionsMessage={() => "No matching cities"}
-                              loadingMessage={() => "Loading cities..."}
-                              className="react-select-container" 
-                              classNamePrefix="react-select" 
-                            />
-                    ) 
-                     :
-                      (
-                        <Input
-                          required
-                          type={FIELD_TYPES[field.name as keyof typeof FIELD_TYPES]}
-                          {...field}
-                          className="form-input"
-                        />
-                      )}
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                );
-              }}
-            />
-          );
-        })}
-      {!isSignIn && (
-            <FormField
-              control={form.control}
-              name={"role" as Path<T>}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Choose your role</FormLabel>
-                  <FormControl>
-                    <div className="flex gap-4">
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          value="donor"
-                          checked={field.value === "donor"}
-                          onChange={field.onChange}
-                        />
-                        Donor
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          value="recipient"
-                          checked={field.value === "recipient"}
-                          onChange={field.onChange}
-                        />
-                        Recipient
-                      </label>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-6 shadow-lg rounded-xl sm:px-10">
+          <p className="text-center text-sm text-gray-600 mb-6">
+            {isSignIn
+              ? "Don't have an account yet?"
+              : "Already have an account?"}{" "}
+            <Link
+              to={isSignIn ? "/register" : "/login"}
+              className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
+            >
+              {isSignIn ? "Sign Up" : "Sign In"}
+            </Link>
+          </p>
+
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(handleSubmit)}
+              className="space-y-5"
+            >
+              {!isSignIn && (
+                <FormField
+                  control={form.control}
+                  name={"role" as Path<T>}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="block text-sm font-medium text-gray-700">
+                        Choose your role
+                      </FormLabel>
+                      <div className="mt-2 flex space-x-6">
+                        <label className="inline-flex items-center">
+                          <input
+                            type="radio"
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                            value="donor"
+                            checked={field.value === "donor"}
+                            onChange={field.onChange}
+                          />
+                          <span className="ml-2 text-sm text-gray-700">
+                            Donor
+                          </span>
+                        </label>
+                        <label className="inline-flex items-center">
+                          <input
+                            type="radio"
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                            value="recipient"
+                            checked={field.value === "recipient"}
+                            onChange={field.onChange}
+                          />
+                          <span className="ml-2 text-sm text-gray-700">
+                            Recipient
+                          </span>
+                        </label>
+                      </div>
+                      <FormMessage className="text-red-600 text-xs mt-1" />
+                    </FormItem>
+                  )}
+                />
               )}
-            />
-          )}
-          
-          {apiError && (
-            <div className="text-red-500 text-center font-medium mt-4">
-              {apiError}
-            </div>
-          )}
 
-          
-          <Button type="submit" className="form-btn">
-            {isSignIn ? "Sign In" : "Sign Up"}
-          </Button>
+              {Object.keys(defaultValues)
+                .filter((field) => field !== "role")
+                .map((field) => {
+                  if (
+                    (field === "food_type" || field === "quantity") &&
+                    role !== "recipient"
+                  )
+                    return null;
 
-          {isSignIn && (
-            <p className="text-center text-sm mt-2">
-              <Link to="/forgot-password" className="text-primary hover:underline">
-                Forgot Password?
-              </Link>
-            </p>
-          )}
+                  return (
+                    <FormField
+                      key={field}
+                      control={form.control}
+                      name={field as Path<T>}
+                      render={({ field }) => (
+                        <FormItem>
+                          {field.name !== "food_type" &&
+                            field.name !== "city" && (
+                              <FormLabel className="block text-sm font-medium text-gray-700">
+                                {
+                                  FIELD_NAMES[
+                                    field.name as keyof typeof FIELD_NAMES
+                                  ]
+                                }
+                              </FormLabel>
+                            )}
+                          <FormControl className="mt-1">
+                            {field.name === "contact_phone" ? (
+                              <PhoneInput
+                                {...field}
+                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                              />
+                            ) : field.name === "food_type" ? (
+                              <AsyncSelect
+                                components={animatedComponents}
+                                isClearable
+                                isMulti
+                                cacheOptions
+                                defaultOptions
+                                isLoading={loading}
+                                loadOptions={loadOptions}
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            ) : field.name === "city" ? (
+                              <AsyncSelect
+                                components={animatedComponents}
+                                isClearable
+                                cacheOptions
+                                defaultOptions
+                                isLoading={loadingCities}
+                                loadOptions={loadCityOptions}
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                            ) : (
+                              <Input
+                                type={
+                                  FIELD_TYPES[
+                                    field.name as keyof typeof FIELD_TYPES
+                                  ]
+                                }
+                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                {...field}
+                              />
+                            )}
+                          </FormControl>
+                          <FormMessage className="text-red-600 text-xs mt-1" />
+                        </FormItem>
+                      )}
+                    />
+                  );
+                })}
 
-        </form>
-      </Form>
-
-      <p className="text-center text-base font-medium">
-        {isSignIn ? "No account yet?" : "Have an account already?"}{" "}
-        <Link
-        to={isSignIn ? "/register" : "/login"}
-          className="font-bold text-primary"
-        >
-          {isSignIn ? "Sign Up" : "Sign In"}
-        </Link>
-      </p>
+              <div>
+                <Button
+                  type="submit"
+                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                >
+                  {isSignIn ? "Sign In" : "Sign Up"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </div>
+      </div>
     </div>
   );
-};
+}
+
 export default AuthForm;
