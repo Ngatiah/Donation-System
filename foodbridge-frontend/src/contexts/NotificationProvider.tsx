@@ -1,4 +1,3 @@
-// src/contexts/NotificationContext.tsx
 import React, { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import { useAuthStore } from '../../store/authStore';
 interface Notification {
@@ -44,6 +43,12 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     };
 
     ws.current.onmessage = (event) => {
+      // ensuring toast notifications not seen when logged out
+      if (!useAuthStore.getState().token) {
+        console.warn('User logged out, ignoring notification');
+        return;
+      }
+
       const data = JSON.parse(event.data);
       console.log('Received notification:', data);
       addNotification(data);
@@ -66,7 +71,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         ws.current = null;
       }
     };
-  }, [token]); // Re-connect if token changes (e.g., user logs out/in)
+  }, [token]); 
 
   return (
     <NotificationContext.Provider value={{ notifications, addNotification, clearNotifications }}>

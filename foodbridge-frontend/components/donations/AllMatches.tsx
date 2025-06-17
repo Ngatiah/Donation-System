@@ -207,7 +207,7 @@ const AllMatches: React.FC<RecipientMatchesProps> = ({ profile, initialMatches, 
                         {/* <p className="text-sm text-gray-700">Quantity: {match.matched_quantity} kg</p> */}
                         <p className="text-sm text-gray-600 italic mt-1">{match.food_description}</p>
                         {/* <p className="text-xs text-gray-500 mt-1">Expires: {new Date(match.expiry_date).toLocaleDateString()}</p> */}
-                        {/* <p className="text-xs text-gray-500 mt-1">Expires: {new Date(match.expiry_date).toDateString().slice(4)}</p> */}
+                        <p className="text-xs text-gray-500 mt-1">Expires: {new Date(match.expiry_date).toDateString().slice(4)}</p>
                         {/* <p className="text-xs text-gray-500">Matched On: {new Date(match.created_at).toLocaleDateString()}</p> */}
                         <button
                             type='button'

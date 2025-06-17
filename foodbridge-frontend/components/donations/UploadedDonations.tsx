@@ -229,11 +229,11 @@ const UploadedDonations: React.FC<UploadedDonationsProps> = ({ donations, onDona
                         <img src="/images/download (1).jpeg" alt="donated-img" className="rounded-md mb-2 w-full" />
                          <h3 className="font-semibold text-lg text-indigo-700">{donation.food_type}</h3>
                         
-                         <p className="text-sm text-gray-700">Quantity: {donation.quantity} kg</p>
+                         {/* <p className="text-sm text-gray-700">Quantity: {donation.quantity} kg</p> */}
                          <p className="text-sm text-gray-600 italic mt-1">{donation.food_description}</p>
                          {/* <p className="text-xs text-gray-500 mt-1">Expires: {new Date(donation.expiry_date).toLocaleDateString()}</p> */}
-
-
+                         <p className="text-xs text-gray-500 mt-1">Expires: {new Date(donation.expiry_date).toDateString().slice(4)}</p>
+                        
                         {/* actions buttons */}
                         <div className='flex justify-between mt-3'>
                             <button

@@ -318,7 +318,9 @@ const Dashboard: React.FC = () => {
     );
 
     
-  const visibleDonations = donations.slice(0,3).filter(donation => !donation.is_deleted)
+  const visibleDonations = donations.slice(0,3).filter(donation => 
+    !donation.is_deleted
+)
   function getDoughnutDataFromStats(stats: DashboardStatistics, role: string) {
   if (role === 'donor') {
     // const claimed = stats.claimed_donations || 0;

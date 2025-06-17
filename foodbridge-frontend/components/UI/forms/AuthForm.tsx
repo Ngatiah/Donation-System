@@ -138,25 +138,49 @@ function AuthForm<T extends FieldValues>({
 
     const result = await onSubmit(data);
 
+    // if (result.success) {
+    //   toast({
+    //     title: "Success",
+    //     description: isSignIn
+    //       ? "You have successfully signed in."
+    //       : "You have successfully signed up.",
+    //   });
+    //   navigate("/home");
+    // } else {
+    //   toast({
+    //     title: `Error ${isSignIn ? "signing in" : "signing up"}`,
+    //     description: result.error,
+    //     variant: "destructive",
+    //   });
     if (result.success) {
-      toast({
-        title: "Success",
-        description: isSignIn
-          ? "You have successfully signed in."
-          : "You have successfully signed up.",
-      });
-      navigate("/home");
-    } else {
-      toast({
-        title: `Error ${isSignIn ? "signing in" : "signing up"}`,
-        description: result.error,
-        variant: "destructive",
-      });
+    window.Swal.fire({
+      title: "Success",
+      text: isSignIn 
+      ? "You have successfully signed in." 
+      : "You have successfully signed up.", 
+      icon: "success",
+      showConfirmButton: false,     // 🔁 Hide OK button
+      timer: 1000,              
+      timerProgressBar: true,
+      // confirmButtonColor: "#3085d6",
+    });
+    setTimeout(() => {
+      navigate("/home"); 
+    }, 3000);
+  }else {
+    window.Swal.fire({
+      title: `Error ${isSignIn ? "signing in" : "signing up"}`,
+      text: result.error || "Something went wrong.",
+      icon: "error",
+      showConfirmButton: false,
+      timer: 2000,
+      timerProgressBar: true,
+      // confirmButtonColor: "#d33",
+    });
+  }
       setApiError(result.error || `An unexpected error occurred during ${type.toLowerCase()}.`);
       console.error(`${type} failed:`, result.error);
     }
-  };
-
 
 
   return (

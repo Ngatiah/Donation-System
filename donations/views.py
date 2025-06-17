@@ -426,30 +426,65 @@ class RetrieveUpdateDestroyDonation(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = DonationSerializer
 
+    def get_queryset(self):
+        # Only allow donors to see/delete their own donations
+        return Donation.objects.filter(donor__user=self.request.user)
+
+    # def destroy(self, request, *args, **kwargs):
+    #     instance = self.get_object()
+
+    #     # Perform a soft delete first
+    #     instance.is_deleted = True
+    #     instance.save()
+    #     logger.info(f"Donation ID {instance.id} soft-deleted by donor.")
+    #     try:
+    #         notifications = notify_donor_and_recipients_of_deletion(
+    #             instance, "Removed by donor" 
+    #         )
+    #         channel_layer = get_channel_layer()
+    #         if channel_layer:
+    #             for notification in notifications:
+    #                 async_to_sync(channel_layer.group_send)(
+    #                     notification['group_name'],
+    #                     notification # The dictionary already has 'type', 'message', 'notification_type', 'data'
+    #                 )
+    #         else:
+    #             logger.warning("Channel layer not available. Notifications for donor deletion will not be sent.")
+    #     except Exception as e:
+    #         logger.error(f"Error sending deletion notifications for Donation ID {instance.id}: {e}", exc_info=True)
+
+    #     return Response(status=status.HTTP_204_NO_CONTENT)
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
-
-        # Perform a soft delete first
         instance.is_deleted = True
         instance.save()
         logger.info(f"Donation ID {instance.id} soft-deleted by donor.")
+
         try:
             notifications = notify_donor_and_recipients_of_deletion(
-                instance, "Removed by donor" 
+                instance, "Removed by donor"
             )
             channel_layer = get_channel_layer()
             if channel_layer:
                 for notification in notifications:
                     async_to_sync(channel_layer.group_send)(
                         notification['group_name'],
-                        notification # The dictionary already has 'type', 'message', 'notification_type', 'data'
+                        notification
                     )
             else:
                 logger.warning("Channel layer not available. Notifications for donor deletion will not be sent.")
         except Exception as e:
             logger.error(f"Error sending deletion notifications for Donation ID {instance.id}: {e}", exc_info=True)
+            return Response({
+                "success": False,
+                "error": "Failed to send notifications."
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({
+            "success": True,
+            "message": f"Donation '{instance.food_type}' deleted successfully."
+        }, status=status.HTTP_200_OK)
+
 
 
 class DonationsMatch(APIView):
