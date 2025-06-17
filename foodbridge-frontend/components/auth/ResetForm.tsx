@@ -30,13 +30,23 @@ const ResetForm: React.FC<ResetFormProps> = ({ userId, token }) => {
 
   return (
     <>
-      <input
-        type="password"
-        value={newPassword}
-        onChange={e => setNewPassword(e.target.value)}
-        placeholder="New Password"
-      />
-      <button onClick={handleReset}>Reset Password</button>
+    <main className="w-full h-screen flex justify-center items-center">
+      <div className="w-96 p-6 rounded-xl border shadow-md">
+        <h2 className="text-xl font-bold text-center mb-4">Reset your password</h2>
+    <div>
+            <label className="text-base font-semibold flex item-center mr-4-auto">Password</label>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={e => setNewPassword(e.target.value)}
+              placeholder="New Password"
+              required
+              className="w-full mt-1 px-3 py-2 border rounded-md outline-none focus:border-indigo-600"
+            />
+      </div>
+      <button onClick={handleReset}  className="w-full px-4 py-2 text-white font-semibold rounded-md bg-indigo-600 hover:bg-indigo-700 mt-4">Reset Password</button>
+      </div>
+      </main>
     </>
   );
 };
