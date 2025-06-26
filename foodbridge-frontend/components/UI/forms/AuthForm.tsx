@@ -612,8 +612,9 @@
 // export default AuthForm;
 import { useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { toast } from "../../hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
+import Swal from "sweetalert2";
+
 import { useForm } from "react-hook-form";
 import AsyncSelect from "react-select/async";
 import makeAnimated from "react-select/animated";
@@ -624,6 +625,13 @@ import type {
   SubmitHandler,
   UseFormReturn,
 } from "react-hook-form";
+
+// import { useToast } from "../../hooks/use-toast";
+// import{ toast } from'react-hot-toast';
+// import CustomAsyncSelect  from "../CustomSelect";
+
+import { useState } from "react";
+// import {DropdownMenu,DropdownMenuItem,DropdownMenuContent,DropdownMenuTrigger} from '../DropdownMenu'
 import {
   Form,
   FormControl,
@@ -663,6 +671,7 @@ function AuthForm<T extends FieldValues>({
 }: Props<T>) {
   const navigate = useNavigate();
   const isSignIn = type === "SIGN_IN";
+  const [apiError, setApiError] = useState<string | null>(null);
   const form: UseFormReturn<T> = useForm<T>({
     resolver: zodResolver(schema),
     defaultValues: defaultValues as DefaultValues<T>,
@@ -690,7 +699,11 @@ function AuthForm<T extends FieldValues>({
   );
 
   const filterCityTypes = useCallback(
-    (inputValue: string): SelectOption[] => {
+    (inputValue: string) => {
+      if (!inputValue) {
+        return allCities.map((type) => ({ value: type, label: type }));
+      }
+      // Filter based on input value (case-insensitive)
       return allCities
         .filter((type) => type.toLowerCase().includes(inputValue.toLowerCase()))
         .map((type) => ({ value: type, label: type }));
@@ -707,25 +720,43 @@ function AuthForm<T extends FieldValues>({
   );
 
   const handleSubmit: SubmitHandler<T> = async (data) => {
+    console.log("FORM DATA", data);
+    setApiError(null);
+
     const result = await onSubmit(data);
+
     if (result.success) {
-      toast({
+      Swal.fire({
         title: "Success",
-        description: isSignIn
+        text: isSignIn
           ? "You have successfully signed in."
           : "You have successfully signed up.",
+        icon: "success",
+        showConfirmButton: false, // 🔁 Hide OK button
+        timer: 1000,
+        timerProgressBar: true,
+        // confirmButtonColor: "#3085d6",
       });
-      navigate("/home");
+      setTimeout(() => {
+        navigate("/home");
+      }, 3000);
     } else {
-      toast({
+      Swal.fire({
         title: `Error ${isSignIn ? "signing in" : "signing up"}`,
-        description: result.error,
-        variant: "destructive",
+        text: result.error || "Something went wrong.",
+        icon: "error",
+        showConfirmButton: false,
+        timer: 2000,
+        timerProgressBar: true,
+        // confirmButtonColor: "#d33",
       });
     }
+    setApiError(
+      result.error ||
+        `An unexpected error occurred during ${type.toLowerCase()}.`
+    );
+    console.error(`${type} failed:`, result.error);
   };
-
-  // ... (keep your existing callbacks and handlers)
 
   return (
     <div className="min-h-screen  flex flex-col justify-center py-12 sm:px-6 lg:px-8">

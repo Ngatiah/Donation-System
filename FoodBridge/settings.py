@@ -136,9 +136,9 @@ ASGI_APPLICATION = 'FoodBridge.asgi.application'
 #     }
 # }
 
-# LOGIN_URL = 'login'
-# LOGIN_REDIRECT_URL = '/'
-# ACCOUNT_LOGOUT_REDIRECT_URL = '/'
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = '/'
+ACCOUNT_LOGOUT_REDIRECT_URL = '/'
 
 #the  redis server
 CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0' # Default Redis URL
@@ -154,14 +154,15 @@ CELERY_TIMEZONE = 'Africa/Nairobi'
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 # Optional: You can define fixed schedules here, but using admin is often preferred.
-# CELERY_BEAT_SCHEDULE = {
-#     'cleanup-expired-donations-daily': {
-#         'task': 'donations.tasks.cleanup_expired_donations',
-#         'schedule': timedelta(days=1), # Run once a day
-#         # 'schedule': timedelta(minutes=5), # For testing, run every 5 minutes
-#         'args': (),
-#     },
-# }
+CELERY_BEAT_SCHEDULE = {
+    'cleanup-expired-donations-daily': {
+        'task': 'donations.tasks.cleanup_expired_donations',
+        'schedule': timedelta(days=1), # Run once a day
+        # 'schedule': timedelta(minutes=5), # For testing, run every 5 minutes
+        'args': (),
+        'options': {'queue': 'default'} # Optional: specify a queue
+    },
+}
 
 
 
@@ -294,3 +295,54 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+# settings.py
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {asctime} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple'
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO', # You might want to change this to DEBUG temporarily
+            'propagate': False,
+        },
+        'FoodBridge': { # Make sure you have a logger for your app
+            'handlers': ['console'],
+            'level': 'DEBUG', # <--- SET THIS TO DEBUG
+            'propagate': False,
+        },
+        '': { # Root logger
+            'handlers': ['console'],
+            'level': 'DEBUG', # <--- OR SET THIS TO DEBUG
+        }
+    }
+}
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For dev
+# DEFAULT_FROM_EMAIL = 'ngatiahivy@gmail.com'
+
+# # EMAIL CONFIG
+# # for production or to gmail generally
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.gmail.com'
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+# EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')  # App password if 2FA is on
+# DEFAULT_FROM_EMAIL = EMAIL_HOST_USER

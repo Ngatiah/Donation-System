@@ -138,16 +138,23 @@ const EditProfile: React.FC = () => {
         const mappedDefaultValues: ProfileFormData = {
           role: role,
           name: ownerName,
-          contact_phone: profileData.contact_phone || "",
+          contact_phone:
+            (role === "donor" && data.donor_profile?.contact_phone) ||
+            (role === "recipient" && data.recipient_profile?.contact_phone) ||
+            "",
           ...(role === "recipient" && {
-            food_type: profileData.required_food_type ?? [],
+            food_type: data.recipient_profile?.required_food_type ?? [], // Access directly
+            // quantity: data.recipient_profile?.required_quantity !== undefined ? parseFloat(data.recipient_profile.required_quantity) : undefined,
             quantity:
-              profileData.required_quantity !== undefined
-                ? parseFloat(profileData.required_quantity)
+              data.recipient_profile?.required_quantity !== undefined &&
+              data.recipient_profile?.required_quantity !== null
+                ? parseFloat(data.recipient_profile.required_quantity)
                 : undefined,
           }),
+          // city: (role === 'donor' && data.donor_profile?.city) ||
+          //       (role === 'recipient' && data.recipient_profile?.city) || '',
         };
-
+        // console.log("Quantity from backend:", profileData.required_quantity, typeof profileData.required_quantity);
         setDefaultValues(mappedDefaultValues);
         setError(null);
       } catch (error) {
@@ -228,7 +235,7 @@ const EditProfile: React.FC = () => {
     );
   }
 
-  return (
+  return defaultValues ? (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
@@ -244,17 +251,27 @@ const EditProfile: React.FC = () => {
             </div>
           </div>
 
-          {/* Form Content - Now includes the submit button */}
-          <div className="p-6 sm:p-8">
-            <EditProfileForm
-              schema={editProfileSchema}
-              defaultValues={defaultValues!}
-              onSubmit={handleSubmit}
-            />
-          </div>
+          <EditProfileForm
+            schema={editProfileSchema}
+            defaultValues={defaultValues}
+            onSubmit={(formData) =>
+              editProfile(
+                {
+                  ...formData,
+                  // Type assertion here:
+                  // If formData.quantity is undefined, assign 0 or handle as per your backend's expectation for missing quantity
+                  quantity: formData.quantity || 0, // This is a common way to convert undefined to 0 if it must be a number
+                  // Or if it truly can be undefined in the backend, use Option 1
+                } as Parameters<typeof editProfile>[0], // Assert the whole object
+                token
+              )
+            }
+          />
         </div>
       </div>
     </div>
+  ) : (
+    <div>Loading profile...</div>
   );
 };
 

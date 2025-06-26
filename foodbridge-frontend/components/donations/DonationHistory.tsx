@@ -11,8 +11,10 @@ interface DonationHistoryItem {
   matched_quantity: number;
   food_description: string;
   is_claimed: boolean;
+  is_missed: boolean;
   is_current_user_the_donor: boolean;
   is_current_user_the_recipient: boolean;
+  is_donation_deleted?: boolean;
 }
 
 const DonationHistory: React.FC = () => {
@@ -64,7 +66,7 @@ const DonationHistory: React.FC = () => {
   }
 
 //  const claimedDonationHistory = history.filter(hist =>
-//    hist.recipient_name && hist.donor_name && hist.is_claimed
+//    hist.recipient_name && hist.donor_name && hist.is_claimed && hist.is_donation_deleted && hist.is_missed
 //  )
 
   return (
@@ -119,12 +121,39 @@ const DonationHistory: React.FC = () => {
                 **Description:** {item.food_description}
               </p>
             )}
-            <p className="text-xs text-gray-500">
-              **Status:** <span className={`font-semibold ${item.is_claimed ? 'text-blue-600' : 'text-yellow-600'}`}>
-                {item.is_claimed ? 'Claimed' : 'Unclaimed'}
-                {/* {item.is_claimed ?? 'Claimed'} */}
+
+
+           <p className="text-xs text-gray-500">
+              **Status:** <span className={`font-semibold ${
+                // item.is_claimed  ? 'text-blue-600'  : item.is_missed  ? 'text-red-600'  : 'text-yellow-600' 
+                item.is_claimed ? 'text-blue-600' :
+                item.is_donation_deleted ? 'text-red-600' : 
+                item.is_missed ? 'text-orange-600' : 
+                'text-yellow-600'
+                }`}>
+                 {/* { */}
+                  {/* // item.is_claimed ? 'Claimed' : 
+                  // item.is_donation_deleted ? 'Unavailable (Donor Removed)' :
+                  // item.is_missed ? 'Missed' : 'Go claim this donation'} */}
+                {item.is_current_user_the_donor ? (
+                  // Logic for DONOR's view
+                  item.is_claimed ? 'Claimed' :
+                  item.is_donation_deleted ? 'Unavailable  - Removed by You' :
+                  item.is_missed ? 'Missed' : 
+                  'Waiting for Recipient to Claim'
+                ) : (
+                  item.is_claimed ? 'You Claimed This' :
+                  item.is_donation_deleted ? 'Unavailable (Donor Removed)' :
+                  item.is_missed ? 'Missed (Another Recipient Claimed)' : 
+                  'Go Claim this Donation' 
+                  
+                )}
               </span>
             </p>
+           
+
+
+
           </div>
         ))}
       </div>

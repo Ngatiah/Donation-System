@@ -1,6 +1,8 @@
 # urls.py
 from django.urls import path
-from .views import UserLogin,UserRegistration,DonationsMatch,UserLogout,UserProfile,switch_role,Dashboard,DonationOptions,CreateOrListDonation,EditProfile,TimeRangeOptionsView,AvailabilityListAPIView,DonationsHistory,CityOptions,TopUsers,DonationStatisticsView,ClaimDonationMatchView,RetrieveUpdateDestroyDonation
+from .views import UserLogin,UserRegistration,DonationsMatch,UserLogout,UserProfile,switch_role,Dashboard,DonationOptions,CreateOrListDonation,EditProfile,TimeRangeOptionsView,AvailabilityListAPIView,DonationsHistory,CityOptions,TopUsers,DonationStatisticsView,ClaimDonationMatchView,RetrieveUpdateDestroyDonation,RequestPasswordResetView,ResetPasswordView
+# ,GenerateDonationReportView
+# ,VerifyEmailView
 
 urlpatterns = [
     path('', Dashboard.as_view(), name='home'),
@@ -8,7 +10,7 @@ urlpatterns = [
     path('login/', UserLogin.as_view(), name='login'),
     path('logout/', UserLogout.as_view(), name='logout'),
     path('create-donations/', CreateOrListDonation.as_view(), name='create-donations'),
-    path('update-donations/<int:pk>/', RetrieveUpdateDestroyDonation.as_view(), name='donation-detail-update-delete'),
+    path('update-donations/<int:pk>/', RetrieveUpdateDestroyDonation.as_view(), name='update-donations'),
     path('donation-matches/', DonationsMatch.as_view(), name='donation-matches'),
     path('donation-options/', DonationOptions.as_view(), name='donation-options'),
     path('donation-history/', DonationsHistory.as_view(), name='donation-history'),
@@ -23,5 +25,15 @@ urlpatterns = [
 
     # recipients claiming donation matches
     path('matches/<int:match_id>/claim/',ClaimDonationMatchView.as_view() , name='claim-donation'),
+
+    # EMAIL VERIFICATION
+    # path('verify-email/<uidb64>/<token>/', VerifyEmailView.as_view(), name='verify-email')
+
+    # password-reset and confirm views
+    path('request-password-reset/', RequestPasswordResetView.as_view(), name='request-password-reset'),
+    path('reset-password/', ResetPasswordView.as_view(), name='reset-password'),
+
+    # generate donation report
+    # path('generate-report/', GenerateDonationReportView.as_view(), name='donation-report'),
 
 ]

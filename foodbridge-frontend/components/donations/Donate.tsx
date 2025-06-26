@@ -8,6 +8,7 @@ const Donate : React.FC = ()=> {
   const token = useAuthStore.getState().token;
   return (
     <DonationForm
+    type='DONATION'
     schema={donationSchema}
     defaultValues={{
         food_type: '',

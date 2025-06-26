@@ -23,6 +23,10 @@ interface DonationMatch {
     expiry_date: string;
     created_at: string;
     is_claimed: boolean;
+    is_missed: boolean;
+    is_donation_deleted?: boolean;
+
+
 }
 
 interface Donation {
@@ -30,8 +34,12 @@ interface Donation {
     food_type: string;
     quantity: number;
     expiry_date: string;
+    donor_name:string;
     food_description?: string;
     created_at: string;
+    is_claimed:boolean;
+    is_deleted:boolean;
+
 }
 
 
@@ -145,6 +153,24 @@ const ViewMore: React.FC = () => {
         });
     };
 
+    const handleDonationUpdated = (updatedDonation: Donation) => {
+        setViewMoreData(prevDashData => {
+            if (!prevDashData) return null;
+            const updatedDonationsList = prevDashData.donations.map(d =>
+                d.id === updatedDonation.id ? updatedDonation : d
+            );
+            return { ...prevDashData, donations: updatedDonationsList };
+        });
+    };
+
+    const handleDonationDeleted = (deletedDonationId: number) => {
+        setViewMoreData(prevDashData => {
+            if (!prevDashData) return null;
+            const filteredDonations = prevDashData.donations.filter(d => d.id !== deletedDonationId);
+            return { ...prevDashData, donations: filteredDonations };
+        });
+    };
+
     if (loading) return <div className="animate-pulse text-gray-500 text-center mt-10">Loading detailed information...</div>;
     if (error) return <div className="text-red-600 text-center mt-10">Error: {error}</div>;
     if (!viewMoreData) return null;
@@ -157,11 +183,12 @@ const ViewMore: React.FC = () => {
     }
 
 
-    // Recipients: Unclaimed matches (where they are the recipient and `is_claimed` is false)
+    // Recipients: Unclaimed  matches 
     const recipientUnclaimedMatches = all_matches_history.filter(match =>
-        match.recipient_name && !match.is_claimed
-    );
+        match.recipient_name && !match.is_claimed && !match.is_missed
+    )
 
+    const undeletedDonations = donations.filter(donation => !donation.is_deleted)
 
     return (
         <main className="flex-1 p-6 w-full">
@@ -169,9 +196,17 @@ const ViewMore: React.FC = () => {
                 {role === 'donor' ? 'Your Donations' : 'Available Donations'}
             </h1>
 
-            <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full'>
+            <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 
+            w-full'>
+            {/* <div className="p-4 col-span-4"> */}
             {role === 'donor' && (
-                <UploadedDonations donations={donations} />
+                <UploadedDonations 
+                // donations={donations} 
+                donations={undeletedDonations} 
+                onDonationDeleted={handleDonationDeleted}
+                onDonationUpdated={handleDonationUpdated}
+                auth={{token:token}}
+                />
             )}
 
             {role === 'recipient' && (
@@ -182,6 +217,7 @@ const ViewMore: React.FC = () => {
                 />
             )}
             </div>
+            {/* </div> */}
 
             
         </main>

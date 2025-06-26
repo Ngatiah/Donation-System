@@ -2,13 +2,16 @@ from knox.models import AuthToken
 from knox.auth import TokenAuthentication
 from rest_framework import generics
 from .serializers import UserSerializer,RegisterSerializer,LoginSerializer,DonationSerializer,ProfileSerializer,DonationHistorySerializer,DonorSerializer,RecipientSerializer,AvailabilitySerializer,TopUserSerializer
-
-# DonationMatchDashboardSerializer
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from django.db import transaction
+from reportlab.pdfgen import canvas
+from django.http import HttpResponse
+from django.utils.timezone import localtime
+import io
 from django.utils import timezone
+from django.shortcuts import redirect
 from rest_framework.throttling import UserRateThrottle
 import pandas as pd
 from django.db.models import Sum, F,Count, Avg
@@ -33,14 +36,26 @@ import logging
 from .constants import TIME_RANGES
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import NotFound
-from django.conf import settings
+# from django.conf import settings
 from geopy.distance import geodesic
 from rest_framework.exceptions import NotFound
 from .matching import get_matching_models
+from .utils import notify_donor_and_recipients_of_deletion
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+# import io
+# from django.utils.timezone import localtime
+# from django.http import HttpResponse
+# from reportlab.lib.pagesizes import A4
+# from reportlab.lib.units import inch
+# from reportlab.lib import colors
+# from reportlab.platypus import Table, TableStyle, SimpleDocTemplate, Paragraph, Spacer
+# from reportlab.lib.styles import getSampleStyleSheet
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
+token_generator = PasswordResetTokenGenerator()
 
+# Create your views here.
 
 # greedy algorithm for distances
 def is_nearby(d_lat, d_lng, r_lat, r_lng, max_km=50):
@@ -60,7 +75,39 @@ def apply_role(user, role: str):
     user.save()
 
 
-# Create your views here.
+class RequestPasswordResetView(APIView):
+    def post(self, request):
+        email = request.data.get('email')
+        try:
+            user = User.objects.get(email=email)
+            token = token_generator.make_token(user)
+            return Response({
+                'reset_token': token,
+                'user_id': user.pk
+            })
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=404)
+        
+class ResetPasswordView(APIView):
+    def post(self, request):
+        user_id = request.data.get('user_id')
+        token = request.data.get('token')
+        new_password = request.data.get('new_password')
+
+        try:
+            user = User.objects.get(pk=user_id)
+        except User.DoesNotExist:
+            return Response({'error': 'Invalid user ID'}, status=400)
+
+        if not token_generator.check_token(user, token):
+            return Response({'error': 'Invalid or expired token'}, status=400)
+
+        user.set_password(new_password)
+        user.save()
+        return Response({'success': 'Password has been reset'})
+
+        
+
 class UserRegistration(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     authentication_classes = [TokenAuthentication]
@@ -193,6 +240,7 @@ def get_ai_scored_donations(recipient, rf_model, le_food, top_n=5):
     # Initial filtering of potential donations from the database
     potential_donations = Donation.objects.filter(
         is_claimed=False,
+        is_deleted=False,
         quantity__gt=0,
         expiry_date__gte=timezone.now().date(),
         donor__lat__isnull=False,
@@ -372,82 +420,72 @@ class CreateOrListDonation(generics.ListCreateAPIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
+
 class RetrieveUpdateDestroyDonation(generics.RetrieveUpdateDestroyAPIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = DonationSerializer
-    queryset = Donation.objects.all()
 
     def get_queryset(self):
+        # Only allow donors to see/delete their own donations
         return Donation.objects.filter(donor__user=self.request.user)
-        
 
-class ClaimDonationMatchView(APIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [TokenAuthentication]
+    # def destroy(self, request, *args, **kwargs):
+    #     instance = self.get_object()
 
-    def post(self, request, match_id):
-        user = request.user
-        role = user.role
-        if role != 'recipient':
-            return Response(
-                {"error": "Only recipients can claim donations."},
-                status=status.HTTP_403_FORBIDDEN
-            )
+    #     # Perform a soft delete first
+    #     instance.is_deleted = True
+    #     instance.save()
+    #     logger.info(f"Donation ID {instance.id} soft-deleted by donor.")
+    #     try:
+    #         notifications = notify_donor_and_recipients_of_deletion(
+    #             instance, "Removed by donor" 
+    #         )
+    #         channel_layer = get_channel_layer()
+    #         if channel_layer:
+    #             for notification in notifications:
+    #                 async_to_sync(channel_layer.group_send)(
+    #                     notification['group_name'],
+    #                     notification # The dictionary already has 'type', 'message', 'notification_type', 'data'
+    #                 )
+    #         else:
+    #             logger.warning("Channel layer not available. Notifications for donor deletion will not be sent.")
+    #     except Exception as e:
+    #         logger.error(f"Error sending deletion notifications for Donation ID {instance.id}: {e}", exc_info=True)
+
+    #     return Response(status=status.HTTP_204_NO_CONTENT)
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.is_deleted = True
+        instance.save()
+        logger.info(f"Donation ID {instance.id} soft-deleted by donor.")
 
         try:
-            recipient = Recipient.objects.get(user=user)
-        except Recipient.DoesNotExist:
-            return Response(
-                {"error": "Recipient profile not found."},
-                status=status.HTTP_404_NOT_FOUND
+            notifications = notify_donor_and_recipients_of_deletion(
+                instance, "Removed by donor"
             )
+            channel_layer = get_channel_layer()
+            if channel_layer:
+                for notification in notifications:
+                    async_to_sync(channel_layer.group_send)(
+                        notification['group_name'],
+                        notification
+                    )
+            else:
+                logger.warning("Channel layer not available. Notifications for donor deletion will not be sent.")
+        except Exception as e:
+            logger.error(f"Error sending deletion notifications for Donation ID {instance.id}: {e}", exc_info=True)
+            return Response({
+                "success": False,
+                "error": "Failed to send notifications."
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        with transaction.atomic():
-            # Get the DonationMatch and lock it to prevent race conditions
-            # select_for_update ensures that only one transaction can modify this row at a time
-            try:
-                # Ensure the recipient is claiming their own unclaimed match
-                donation_match = DonationMatch.objects.select_for_update().get(
-                    id=match_id,
-                    recipient=recipient, 
-                    is_claimed=False 
-                )
-            except DonationMatch.DoesNotExist:
-                return Response(
-                    {"error": "Donation match not found or already claimed."},
-                    status=status.HTTP_404_NOT_FOUND
-                )
+        return Response({
+            "success": True,
+            "message": f"Donation '{instance.food_type}' deleted successfully."
+        }, status=status.HTTP_200_OK)
 
-            donation = donation_match.donation
 
-            # Check if the related donation has already been claimed
-            if donation.is_claimed:
-                return Response(
-                    {"error": "This donation has already been claimed by another recipient."},
-                    status=status.HTTP_409_CONFLICT # Conflict status
-                )
-
-            # Mark the specific DonationMatch as claimed
-            donation_match.is_claimed = True
-            donation_match.save()
-
-            # Mark the original Donation as claimed
-            donation.is_claimed = True
-            donation.save()
-
-            # Invalidate claimed donation from others
-            DonationMatch.objects.filter(
-                donation=donation,
-                is_claimed=False
-            ).exclude(id=donation_match.id).delete()
-
-            return Response(
-                {"message": "Donation claimed successfully!",
-                 "claimed_match": DonationHistorySerializer(donation_match).data},
-                status=status.HTTP_200_OK
-            )
-        
 
 class DonationsMatch(APIView):
     serializer_class = DonationSerializer
@@ -512,6 +550,7 @@ class DonationsMatch(APIView):
             
             donations = Donation.objects.filter(
                 is_claimed=False,
+                is_deleted=False,
                 quantity__gt=0,
                 expiry_date__gte=timezone.now().date(),
                 donor__lat__isnull=False,
@@ -549,7 +588,6 @@ class DonationsMatch(APIView):
                     quantity_ratio = min(1.0, donation.quantity / required_quantity)
                 else:
                     # If required_quantity somehow becomes 0 (should be prevented by validation)
-                    # Match the logic from your training script for this edge case.
                     quantity_ratio = 1.0 if donation.quantity > 0 else 0.0
 
 
@@ -565,7 +603,7 @@ class DonationsMatch(APIView):
 
                 match_inputs.append({
                     'food_match': food_match,
-                    'exact_quantity_match': exact_quantity_match, # New feature
+                    'exact_quantity_match': exact_quantity_match, 
                     'quantity_ratio': quantity_ratio,   
                     'distance': distance_km,
                 })
@@ -609,21 +647,17 @@ class DonationsMatch(APIView):
                             'matched_quantity': existing_match.matched_quantity,
                             'food_description': existing_match.food_description,
                             'expiry_date': existing_match.expiry_date.isoformat(),
+                            'is_claimed': existing_match.is_claimed,
+                            'is_missed': existing_match.is_missed,
                         })
                         continue
 
                     WEIGHT_FOOD = 0.35
-                    WEIGHT_EXACT_QTY = 0.25 # Significant boost for exactness
+                    WEIGHT_EXACT_QTY = 0.25 
                     WEIGHT_PARTIAL_QTY = 0.15 # Contribution for any partial fulfillment
                     WEIGHT_DISTANCE = 0.25
 
         
-                    # match_score = int((
-                    #     match_input['food_match'] * 0.4 +
-                    #     match_input['quantity_match'] * 0.3 +
-                    #     max(0, 1 - (match_input['distance'] / 50)) * 0.3 # Re-calculate score using the features
-                    # ) * 100)
-
                     # scaling match score out of 100
                     match_score = int((
                         match_input['food_match'] * WEIGHT_FOOD +
@@ -656,6 +690,8 @@ class DonationsMatch(APIView):
                         'matched_quantity': actual_matched_quantity,
                         'food_description': donation.food_description,
                         'expiry_date': new_match.expiry_date.isoformat(),
+                        'is_claimed': new_match.is_claimed,
+                        'is_missed': new_match.is_missed,
                     })
 
                     notifications_to_send.append({
@@ -708,71 +744,78 @@ class DonationsMatch(APIView):
             logger.exception("Donation matching failed for user %s: %s", request.user, str(e))
             return Response({'error': 'An unexpected error occurred during matching.'}, status=500)
 
-# class ClaimDonationMatchView(APIView):
-#     permission_classes = [IsAuthenticated]
-#     authentication_classes = [TokenAuthentication]
+class ClaimDonationMatchView(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
 
-#     def post(self, request, match_id):
-#         user = request.user
-#         role = user.role
-#         if role != 'recipient':
-#             return Response(
-#                 {"error": "Only recipients can claim donations."},
-#                 status=status.HTTP_403_FORBIDDEN
-#             )
+    def post(self, request, match_id):
+        user = request.user
+        role = user.role
+        if role != 'recipient':
+            return Response(
+                {"error": "Only recipients can claim donations."},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
-#         try:
-#             recipient = Recipient.objects.get(user=user)
-#         except Recipient.DoesNotExist:
-#             return Response(
-#                 {"error": "Recipient profile not found."},
-#                 status=status.HTTP_404_NOT_FOUND
-#             )
+        try:
+            recipient = Recipient.objects.get(user=user)
+        except Recipient.DoesNotExist:
+            return Response(
+                {"error": "Recipient profile not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
-#         with transaction.atomic():
-#             # Get the DonationMatch and lock it to prevent race conditions
-#             # select_for_update ensures that only one transaction can modify this row at a time
-#             try:
-#                 # Ensure the recipient is claiming their own unclaimed match
-#                 donation_match = DonationMatch.objects.select_for_update().get(
-#                     id=match_id,
-#                     recipient=recipient, 
-#                     is_claimed=False 
-#                 )
-#             except DonationMatch.DoesNotExist:
-#                 return Response(
-#                     {"error": "Donation match not found or already claimed."},
-#                     status=status.HTTP_404_NOT_FOUND
-#                 )
+        with transaction.atomic():
+            # Get the DonationMatch and lock it to prevent race conditions
+            # select_for_update ensures that only one transaction can modify this row at a time
+            try:
+                # Ensure the recipient is claiming their own unclaimed match
+                donation_match = DonationMatch.objects.select_for_update().get(
+                    id=match_id,
+                    recipient=recipient, 
+                    is_claimed=False 
+                )
+            except DonationMatch.DoesNotExist:
+                return Response(
+                    {"error": "Donation match not found or already claimed."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
 
-#             donation = donation_match.donation
+            donation = donation_match.donation
 
-#             # Check if the related donation has already been claimed
-#             if donation.is_claimed:
-#                 return Response(
-#                     {"error": "This donation has already been claimed by another recipient."},
-#                     status=status.HTTP_409_CONFLICT # Conflict status
-#                 )
+            # Check if the related donation has already been claimed
+            if donation.is_claimed:
+                return Response(
+                    {"error": "This donation has already been claimed by another recipient."},
+                    status=status.HTTP_409_CONFLICT # Conflict status
+                )
 
-#             # Mark the specific DonationMatch as claimed
-#             donation_match.is_claimed = True
-#             donation_match.save()
+            # Mark the specific DonationMatch as claimed
+            donation_match.is_claimed = True
+            donation_match.save()
 
-#             # Mark the original Donation as claimed
-#             donation.is_claimed = True
-#             donation.save()
+            # Mark the original Donation as claimed
+            donation.is_claimed = True
+            donation.save()
 
-#             # Invalidate claimed donation from others
-#             DonationMatch.objects.filter(
-#                 donation=donation,
-#                 is_claimed=False
-#             ).exclude(id=donation_match.id).delete()
+            # Invalidate claimed donation for others and delete
+            # DonationMatch.objects.filter(
+            #     donation=donation,
+            #     is_claimed=False
+            # ).exclude(id=donation_match.id).delete()
 
-#             return Response(
-#                 {"message": "Donation claimed successfully!",
-#                  "claimed_match": DonationHistorySerializer(donation_match).data},
-#                 status=status.HTTP_200_OK
-#             )
+            # Invalidate claimed donations for others but track as missed in their  history
+            DonationMatch.objects.filter(
+                donation=donation,
+                is_claimed=False
+            ).exclude(id=donation_match.id).update(is_missed=True)
+
+
+            return Response(
+                {"message": "Donation claimed successfully!",
+                 "claimed_match": DonationHistorySerializer(donation_match).data},
+                status=status.HTTP_200_OK
+            )
 
 
 # @api_view(['PATCH'])
@@ -1051,5 +1094,102 @@ class DonationStatisticsView(APIView):
 
 
 # donors print their donation reports to show their contributions
-def generate_reports():
-    pass
+# class GenerateDonationReportView(APIView):
+#     authentication_classes = [TokenAuthentication]
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self, request):
+#         try:
+#             donor = Donor.objects.get(user=request.user)
+#         except Donor.DoesNotExist:
+#             return Response({'detail': 'Donor profile not found.'}, status=status.HTTP_400_BAD_REQUEST)
+
+#         donations = Donation.objects.filter(donor=donor, is_claimed=True).select_related('recipient')
+
+#         # if not donations.exists():
+#         #     return Response({'detail': 'No claimed donations found for this donor.'}, status=status.HTTP_200_OK)
+
+#         # # Prepare buffer and PDF
+#         # buffer = io.BytesIO()
+#         # doc = SimpleDocTemplate(buffer, pagesize=A4)
+#         # elements = []
+#         # styles = getSampleStyleSheet()
+
+#         # # Header
+#         # title = Paragraph(f"<b>Kindbite Donation Report</b>", styles['Title'])
+#         # donor_info = Paragraph(f"<b>Donor:</b> {request.user.name} ({request.user.email})", styles['Normal'])
+#         # date_info = Paragraph(f"<b>Report Date:</b> {datetime.now().strftime('%Y-%m-%d')}", styles['Normal'])
+#         # elements.extend([title, Spacer(1, 0.2 * inch), donor_info, date_info, Spacer(1, 0.3 * inch)])
+
+#         # # Summary
+#         # total_donations = donations.count()
+#         # total_quantity = sum(d.quantity for d in donations if d.quantity)
+#         # unique_recipients = len(set(d.recipient_id for d in donations if d.recipient_id))
+
+#         # summary_text = f"""
+#         # <b>Summary:</b><br/>
+#         # - Total Claimed Donations: {total_donations}<br/>
+#         # - Total Quantity Donated: {total_quantity} kg<br/>
+#         # - Unique Recipients Helped: {unique_recipients}<br/>
+#         # """
+#         # elements.append(Paragraph(summary_text, styles['Normal']))
+#         # elements.append(Spacer(1, 0.3 * inch))
+
+#         # # Table header
+#         # data = [['Date', 'Food Type', 'Quantity', 'Recipient', 'Location', 'Status']]
+#         # # data = [['Date', 'Food Type', 'Quantity', 'Recipient', 'Location']]
+
+#         # # Table rows
+#         # for donation in donations:
+#         #     date = localtime(donation.created_at).strftime('%Y-%m-%d')
+#         #     food_type = donation.food_type or 'N/A'
+#         #     quantity = f"{donation.quantity} kg" if donation.quantity else 'N/A'
+#         #     recipient_name = donation.recipient.user.name if donation.recipient and donation.recipient.user else 'Anonymous'
+#         #     location = donation.recipient.city if donation.recipient and donation.recipient.city else 'N/A'
+#         #     status = 'Collected' if donation.is_claimed else 'Pending'
+#         #     data.append([date, food_type, quantity, recipient_name, location, status])
+#         #     # data.append([date, food_type, quantity, recipient_name, location])
+
+#         # # Create and style the table
+#         # table = Table(data, colWidths=[1.2*inch]*6)
+#         # table.setStyle(TableStyle([
+#         #     ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#4a90e2")),
+#         #     ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+#         #     ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+#         #     ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+#         #     ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+#         #     ('FONTSIZE', (0, 0), (-1, -1), 10),
+#         #     ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
+#         # ]))
+#         # elements.append(table)
+
+#         # # Build PDF
+#         # doc.build(elements)
+#         # buffer.seek(0)
+#         # # return HttpResponse(buffer, content_type='application/pdf')
+#         # response = HttpResponse(buffer, content_type='application/pdf')
+#         # # naming downloaded attachment
+#         # response['Content-Disposition'] = 'attachment; filename="donation_report.pdf"'
+#         # return response
+
+#         if not donations.exists():
+#             buffer = io.BytesIO()
+#             doc = SimpleDocTemplate(buffer, pagesize=A4)
+#             styles = getSampleStyleSheet()
+            
+#             elements = [
+#                 Paragraph("FoodBridge Donation Report", styles['Title']),
+#                 Spacer(1, 0.2 * inch),
+#                 Paragraph(f"Donor: {request.user.name} ({request.user.email})", styles['Normal']),
+#                 Spacer(1, 0.2 * inch),
+#                 Paragraph("No claimed donations found for this donor yet.", styles['Normal']),
+#             ]
+            
+#             doc.build(elements)
+#             buffer.seek(0)
+
+#             response = HttpResponse(buffer, content_type='application/pdf')
+#             response['Content-Disposition'] = 'attachment; filename="donation_report.pdf"'
+#             return response
+
+

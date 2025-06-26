@@ -21,6 +21,8 @@ interface DonationMatch {
     expiry_date: string;
     created_at: string;
     is_claimed: boolean;
+    is_donation_deleted?: boolean;
+
 }
 
 interface RecipientMatchesProps {
@@ -202,10 +204,11 @@ const AllMatches: React.FC<RecipientMatchesProps> = ({ profile, initialMatches, 
                         <img src="/images/download (1).jpeg" alt="donated-img" className="rounded-md mb-2 w-full" />
                         <h3 className="font-semibold text-lg text-indigo-700">{match.food_type}</h3>
                         <p className="text-sm text-gray-600">Donor: <span className="font-medium">{match.donor_name}</span></p>
-                        <p className="text-sm text-gray-700">Quantity: {match.matched_quantity} kg</p>
+                        {/* <p className="text-sm text-gray-700">Quantity: {match.matched_quantity} kg</p> */}
                         <p className="text-sm text-gray-600 italic mt-1">{match.food_description}</p>
-                        <p className="text-xs text-gray-500 mt-1">Expires: {new Date(match.expiry_date).toLocaleDateString()}</p>
-                        <p className="text-xs text-gray-500">Matched On: {new Date(match.created_at).toLocaleDateString()}</p>
+                        {/* <p className="text-xs text-gray-500 mt-1">Expires: {new Date(match.expiry_date).toLocaleDateString()}</p> */}
+                        <p className="text-xs text-gray-500 mt-1">Expires: {new Date(match.expiry_date).toDateString().slice(4)}</p>
+                        {/* <p className="text-xs text-gray-500">Matched On: {new Date(match.created_at).toLocaleDateString()}</p> */}
                         <button
                             type='button'
                             className={`mt-3 p-2 font-medium text-sm rounded transition w-full ${

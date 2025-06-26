@@ -4,9 +4,11 @@ from django.conf import settings
 from datetime import timedelta
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 # from django.contrib.postgres.fields import ArrayField # If you are ONLY using PostgreSQL
-
-
 
 # Create your models here.
 class Availability(models.Model):
@@ -76,6 +78,7 @@ class Donation(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     availability = models.ManyToManyField('Availability', blank=True, related_name='donation_availabilities')
     is_claimed = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Donation of {self.food_type} ({self.quantity}) by {self.donor.user.name}"
@@ -102,6 +105,8 @@ class DonationMatch(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     match_score = models.IntegerField(default=0)
     is_claimed = models.BooleanField(default=False)
+    is_missed = models.BooleanField(default=False) 
+
 
     class Meta:
         ordering = ['-created_at']
@@ -110,6 +115,36 @@ class DonationMatch(models.Model):
     def __str__(self):
         return f"Match: {self.donor.user.name} → {self.recipient.user.name} ({self.food_type})"
     
+
+
+@receiver(post_save, sender=Donation)
+def notify_recipient_on_claim(sender, instance, **kwargs):
+    if instance.is_claimed:
+        matches = DonationMatch.objects.filter(donation=instance, is_claimed=False, is_missed=False)
+
+        for match in matches:
+            recipient_user = match.recipient.user
+
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f"user_{recipient_user.id}",
+                {
+                    "type": "send_notification",
+                    "message": f"Unfortunately, the donation of {instance.food_type} from {instance.donor.user.name} has already been claimed by another recipient.",
+                    "notification_type": "match_missed_recipient",
+                    "data": {
+                        "donation_id": instance.id,
+                        "food_type": instance.food_type,
+                        "matched_quantity": match.matched_quantity,
+                        "donor_name": instance.donor.user.name,
+                        "match_id": match.id,
+                    }
+                }
+            )
+            # Optionally, update the match state
+            match.is_missed = True
+            match.save()
+            
 
 # class Feedback(models.Model):
 #     match = models.OneToOneField(DonationMatch, on_delete=models.CASCADE)

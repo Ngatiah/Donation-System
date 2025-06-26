@@ -21,4 +21,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path(r'FoodBridge/auth/', include('knox.urls')),
     path('FoodBridge/donations/', include('donations.urls'))
+
 ]

@@ -21,6 +21,7 @@ interface ProfileData {
   // user: User;
   // name:string;
   role: string;
+  email: string;
   contact_phone: string;
   // required_food_type: string;
   required_quantity: string;
@@ -71,7 +72,8 @@ const Profile: React.FC<ProfileData> = () => {
   if (error) return <div>Error: {error}</div>;
   if (!profile) return null;
 
-  const { role, contact_phone, recipient_profile, donor_profile } = profile;
+  const { role, contact_phone, recipient_profile, donor_profile, email } =
+    profile;
   const reqFood = recipient_profile?.required_food_type;
   const reqQuantity = recipient_profile?.required_quantity;
   const name = recipient_profile
@@ -102,6 +104,9 @@ const Profile: React.FC<ProfileData> = () => {
                     {role}
                   </span>
                   <span className="text-gray-600 text-sm flex items-center">
+                    {email}
+                  </span>
+                  <span className="text-gray-600 text-sm flex items-center">
                     📞 {contact_phone}
                   </span>
                 </div>
@@ -111,7 +116,7 @@ const Profile: React.FC<ProfileData> = () => {
                       <span className="font-medium text-green-700">
                         Food Needed:
                       </span>{" "}
-                      {reqFood}
+                      {Array.isArray(reqFood) ? reqFood.join(", ") : reqFood}
                     </p>
                     <p className="text-sm text-gray-600">
                       <span className="font-medium text-green-700">
