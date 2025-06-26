@@ -29,10 +29,7 @@
     "react-router-dom": "^7.5.3",
     "react-select": "^5.10.1",
     "recharts": "^2.15.3",
-<<<<<<< HEAD
-=======
     "sweetalert2": "^11.22.0",
->>>>>>> restore-my-work
     "tailwind-merge": "^3.2.0",
     "zod": "^3.24.4",
     "zustand": "^5.0.5"
