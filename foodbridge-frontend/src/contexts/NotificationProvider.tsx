@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef, type ReactNode } from 'react';
 import { useAuthStore } from '../../store/authStore';
 interface Notification {
   message: string;

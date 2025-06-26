@@ -1,20 +1,19 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import CustomAvatar from "../UI/Avatar";
-import { Plus } from "lucide-react";
+import {  Plus  } from "lucide-react";
+import toast from "react-hot-toast";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import NotificationBell from "../notifications/NotificationBell";
 import UploadedDonations from "../donations/UploadedDonations";
 import AllMatches from "../donations/AllMatches";
-import { DropdownMenu } from "@radix-ui/themes";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import { DropdownMenu, Button } from "@radix-ui/themes";
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+import { Doughnut, Pie } from "react-chartjs-2";
+// import {handleDownloadReport} from '../lib/actions/report'
+
+ChartJS.register(ArcElement, Tooltip, Legend);
+
 interface TopUser {
   name: string;
   total_quantity_kg: number;
@@ -38,6 +37,8 @@ interface DonationMatch {
   expiry_date: string;
   created_at: string;
   is_claimed: boolean;
+  is_missed: boolean;
+  is_donation_deleted?: boolean;
 }
 
 interface Donation {
@@ -47,6 +48,9 @@ interface Donation {
   expiry_date: string;
   food_description?: string;
   created_at: string;
+  donor_name: string;
+  is_claimed: boolean;
+  is_deleted: boolean;
 }
 
 interface DashboardStatistics {
@@ -68,8 +72,8 @@ interface DashboardData {
   topUsers: TopUser[];
   stats: DashboardStatistics;
 }
-const Dashboard: React.FC = () => {
-  // ... (keep all your existing state and data fetching logic)
+
+const Dashboard: React.FC = ({}) => {
   const [dashData, setDashData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -246,28 +250,26 @@ const Dashboard: React.FC = () => {
     });
   };
 
-  const StatsCard = ({
-    title,
-    value,
-    color,
-  }: {
-    title: string;
-    value: number;
-    color: string;
-  }) => (
-    <div
-      className={`bg-white rounded-xl p-3 md:p-4 text-center border-t-4 ${color} shadow-sm`}
-    >
-      <h4 className="text-xs md:text-sm font-medium text-gray-500">{title}</h4>
-      <p className="text-xl md:text-2xl font-bold">{value}</p>
-    </div>
-  );
-  //   if (loading)
-  //     return (
-  //       <div className="animate-pulse text-gray-500">Loading dashboard...</div>
-  //     );
-  //   if (error) return <div>Error: {error}</div>;
-  //   if (!dashData) return null;
+  const handleDonationUpdated = (updatedDonation: Donation) => {
+    setDashData((prevDashData) => {
+      if (!prevDashData) return null;
+      const updatedDonationsList = prevDashData.donations.map((d) =>
+        d.id === updatedDonation.id ? updatedDonation : d
+      );
+      return { ...prevDashData, donations: updatedDonationsList };
+    });
+  };
+
+  const handleDonationDeleted = (deletedDonationId: number) => {
+    setDashData((prevDashData) => {
+      if (!prevDashData) return null;
+      const filteredDonations = prevDashData.donations.filter(
+        (d) => d.id !== deletedDonationId
+      );
+      return { ...prevDashData, donations: filteredDonations };
+    });
+  };
+
   if (loading)
     return (
       <div className="flex items-center justify-center h-64">
@@ -277,7 +279,7 @@ const Dashboard: React.FC = () => {
 
   if (error)
     return (
-      <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mx-6 my-4">
+      <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mx-4 my-4 md:mx-6">
         <p className="font-bold">Error</p>
         <p>{error}</p>
       </div>
@@ -295,210 +297,201 @@ const Dashboard: React.FC = () => {
     );
   }
 
-  // Filter unclaimed matches for recipients specifically for the dashboard display
-  // const unclaimedRecipientMatches = all_matches_history.filter(match =>
-  //    profile &&  match.recipient_name  profile.recipient_name && !match.is_claimed
-  // );
-  const unclaimedRecipientMatches = all_matches_history.filter(
-    (match) => match.recipient_name && !match.is_claimed
+  // filtering unclaimed matches
+  const unclaimedAndUnmissedRecipientMatches = all_matches_history.filter(
+    (match) =>
+      match.recipient_name &&
+      !match.is_claimed &&
+      !match.is_missed &&
+      !match.is_donation_deleted
   );
 
-  const visibleDonatons = donations.slice(0, 3);
+  const visibleDonations = donations
+    .filter((donation) => !donation.is_deleted)
+    .slice(0, 4);
+  function getPieDataFromStats(stats: DashboardStatistics, role: string) {
+    if (!stats) return null;
 
-  // Prepare chart data from stats
-  const chartData = [
-    { name: "Total", value: stats?.total_donations || 0 },
-    { name: "Today", value: stats?.donations_today || 0 },
-    { name: "Claimed", value: stats?.claimed_donations || 0 },
-    { name: "Avg", value: stats?.average_donation || 0 },
-    { name: "Recipients", value: stats?.total_recipients || 0 },
-  ];
+    const baseColors = [
+      "rgba(52, 152, 219, 0.7)", // Soft blue
+      "rgba(46, 204, 113, 0.7)", // Soft green
+      "rgba(155, 89, 182, 0.7)", // Soft purple
+      "rgba(241, 196, 15, 0.7)", // Soft yellow
+      "rgba(230, 126, 34, 0.7)", // Soft orange
+    ];
+    if (role === "donor") {
+      // const claimed = stats.claimed_donations || 0;
+      // const total = stats.total_donations || 0;
+      // const unclaimed = total - claimed;
 
-  if (loading)
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
+      return {
+        labels: [
+          "Total Donations Contributed",
+          "Total Donations Today",
+          "Claimed Donations",
+          "Total Recipients",
+          "Avg. Donations Contributed",
+        ],
+        datasets: [
+          {
+            data: [
+              // claimed,
+              // unclaimed
+              stats.total_donations || 0,
+              stats.donations_today || 0,
+              stats.claimed_donations || 0,
+              stats.total_recipients,
+              stats.average_donation || 0,
+            ],
+            backgroundColor: baseColors,
+            borderColor: baseColors.map((color) => color.replace("0.7", "1")),
+            borderWidth: 1,
+          },
+        ],
+      };
+    } else if (role === "admin") {
+      return {
+        labels: [
+          "Total Platform Received",
+          "Received Today",
+          "Total Donors",
+          "Total Recipients",
+          "Avg. Donations",
+        ],
+        datasets: [
+          {
+            data: [
+              stats.total_platform_received || 0,
+              stats.platform_received_today || 0,
+              stats.total_donors || 0,
+              stats.total_recipients || 0,
+              stats.average_donation || 0,
+            ],
+            backgroundColor: baseColors,
+            borderColor: baseColors.map((color) => color.replace("0.7", "1")),
+            borderWidth: 1,
+          },
+        ],
+      };
+    } else if (role === "recipient") {
+      return {
+        labels: [
+          "Total Received",
+          "Total Received Today",
+          "Claimed Today",
+          "Total Donors",
+          "Avg. Donations Received",
+        ],
+        datasets: [
+          {
+            data: [
+              stats.total_donations || 0,
+              stats.donations_today || 0,
+              stats.claimed_donations || 0,
+              stats.total_donors || 0,
+              stats.average_donation || 0,
+            ],
+            // backgroundColor: ['#8bc34a', '#ffc107'],
+            backgroundColor: baseColors,
+            borderColor: baseColors.map((color) => color.replace("0.7", "1")),
+            borderWidth: 1,
+          },
+        ],
+      };
+    } else return null;
+  }
 
-  if (error)
-    return (
-      <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mx-6 my-4">
-        <p className="font-bold">Error</p>
-        <p>{error}</p>
-      </div>
-    );
-
-  if (!dashData) return null;
-
+  const chartData = getPieDataFromStats(stats, profile.role);
+  
   return (
-    <main className="flex-1 p-4 md:p-6  min-h-screen">
-      {/* Header Section */}
-      {/* <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 bg-white p-4 rounded-xl shadow-sm gap-4">
-        <div className="flex items-center justify-between w-full md:w-auto">
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold text-gray-800">
-              Welcome back,{" "}
+    <div className="flex-1 w-full min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-6 overflow-x-hidden">
+      {/* Top Navigation */}
+      <header className="bg-white rounded-xl shadow-md p-4 mb-4 md:mb-6 flex flex-col md:flex-row md:justify-between md:items-center">
+        <div className="mb-3 md:mb-0">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-800">
+            Welcome back,{" "}
+            <span className="text-gradient bg-gradient-to-r from-blue-600 to-green-500 bg-clip-text text-transparent">
               {role === "recipient"
                 ? profile.recipient_name
                 : profile.donor_name}
-            </h1>
-            <p className="text-sm md:text-base text-gray-600">
-              {role === "donor"
-                ? "Your contributions are making a difference"
-                : "Find available donations below"}
-            </p>
-          </div>
-        
-          {role === "donor" && (
-            <Link to="/donate" className="w-full md:w-auto">
-              <button className="w-full bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg text-sm md:text-base">
-                <Plus className="h-4 w-4 md:h-5 md:w-5" />
-                <span>New Donation</span>
-              </button>
-            </Link>
-          )}
-
-          <div className="flex items-center gap-2 ml-auto md:ml-0">
-            <NotificationBell />
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger>
-                <CustomAvatar />
-              </DropdownMenu.Trigger>
-              <div className="flex items-center gap-2 cursor-pointer">
-                <CustomAvatar />
-                <span className="font-medium text-gray-700 hidden md:inline">
-                  //{" "}
-                  {role == "recipient"
-                    ? dashData.profile.recipient_name
-                    : dashData.profile.donor_name}
-                </span>
-              </div>
-              <DropdownMenu.Content className="min-w-[200px] bg-white rounded-md shadow-lg z-50">
-                <DropdownMenu.Item
-                  className="px-4 py-2 text-gray-700 hover:bg-blue-50 cursor-pointer"
-                  onClick={() => navigate("/view-profile")}
-                >
-                  Profile
-                </DropdownMenu.Item>
-                <DropdownMenu.Separator className="border-t border-gray-200 my-1" />
-                <DropdownMenu.Item
-                  className="px-4 py-2 text-gray-700 hover:bg-blue-50 cursor-pointer"
-                  onClick={() => navigate("/logout")}
-                >
-                  Logout
-                </DropdownMenu.Item>
-              </DropdownMenu.Content>
-            </DropdownMenu.Root>
-          </div>
-        </div>
-      </div> */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 bg-white p-4 rounded-xl shadow-sm gap-4">
-        {/* Welcome text and mobile controls */}
-        <div className="w-full">
-          <div className="flex justify-between items-start w-full">
-            <div>
-              <h1 className="text-xl md:text-2xl font-bold text-gray-800">
-                Welcome back,{" "}
-                {role === "recipient"
-                  ? profile.recipient_name
-                  : profile.donor_name}
-              </h1>
-              <p className="text-sm md:text-base text-gray-600">
-                {role === "donor"
-                  ? "Your contributions are making a difference"
-                  : "Find available donations below"}
-              </p>
-            </div>
-
-            {/* Mobile view - notification and avatar only */}
-            <div className="flex items-center gap-2 md:hidden">
-              <NotificationBell />
-              <DropdownMenu.Root>
-                <DropdownMenu.Trigger>
-                  <CustomAvatar />
-                </DropdownMenu.Trigger>
-                <DropdownMenu.Content className="min-w-[200px] bg-white rounded-md shadow-lg z-50">
-                  <DropdownMenu.Item
-                    className="px-4 py-2 text-gray-700 hover:bg-blue-50 cursor-pointer"
-                    onClick={() => navigate("/view-profile")}
-                  >
-                    Profile
-                  </DropdownMenu.Item>
-                  <DropdownMenu.Separator className="border-t border-gray-200 my-1" />
-                  <DropdownMenu.Item
-                    className="px-4 py-2 text-gray-700 hover:bg-blue-50 cursor-pointer"
-                    onClick={() => navigate("/logout")}
-                  >
-                    Logout
-                  </DropdownMenu.Item>
-                </DropdownMenu.Content>
-              </DropdownMenu.Root>
-            </div>
-          </div>
-
-          {/* New Donation Button - below text on mobile */}
-          {role === "donor" && (
-            <Link
-              to="/donate"
-              className="w-full mt-4 md:mt-0 md:w-auto block md:inline"
-            >
-              <button className="w-full md:w-auto bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg text-sm md:text-base">
-                <Plus className="h-4 w-4 md:h-5 md:w-5" />
-                <span>New Donation</span>
-              </button>
-            </Link>
-          )}
+            </span>
+          </h1>
+          <p className="text-sm md:text-base text-gray-600">
+            {role === "donor"
+              ? "Your contributions are making a difference"
+              : "Find available donations below"}
+          </p>
         </div>
 
-        {/* Desktop view - notification and profile */}
-        <div className="hidden md:flex items-center gap-4">
+        <div className="flex items-center space-x-3 md:space-x-4">
           <NotificationBell />
+
+          {role === "donor" && (
+            <Link to="/donate" className="hidden sm:inline-block">
+              <button className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white px-4 py-2 rounded-lg font-medium flex items-center transition-all shadow-md hover:shadow-lg active:scale-95">
+                <Plus className="mr-1 md:mr-2" size={16} />
+                <span className="text-sm md:text-base">New Donation</span>
+              </button>
+            </Link>
+          )}
+
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
-              <div className="flex items-center gap-2 cursor-pointer bg-white p-2 rounded-lg border border-gray-200 hover:bg-gray-50">
+              <div className="flex items-center space-x-2 cursor-pointer hover:bg-gray-100 rounded-full p-1 transition-colors">
                 <CustomAvatar />
-                <span className="font-medium text-gray-700">
+                <span className="hidden md:inline font-medium text-gray-700">
                   {role === "recipient"
                     ? profile.recipient_name
                     : profile.donor_name}
                 </span>
               </div>
             </DropdownMenu.Trigger>
-            <DropdownMenu.Content className="min-w-[200px] bg-white rounded-md shadow-lg z-50">
+            <DropdownMenu.Content className="min-w-[180px] bg-white rounded-md shadow-lg z-50 border border-gray-200">
               <DropdownMenu.Item
-                className="px-4 py-2 text-gray-700 hover:bg-blue-50 cursor-pointer"
                 onClick={() => navigate("/view-profile")}
+                className="px-4 py-2 text-gray-700 hover:bg-blue-50 cursor-pointer"
               >
                 Profile
               </DropdownMenu.Item>
               <DropdownMenu.Separator className="border-t border-gray-200 my-1" />
               <DropdownMenu.Item
-                className="px-4 py-2 text-gray-700 hover:bg-blue-50 cursor-pointer"
                 onClick={() => navigate("/logout")}
+                className="px-4 py-2 text-gray-700 hover:bg-blue-50 cursor-pointer"
               >
                 Logout
               </DropdownMenu.Item>
             </DropdownMenu.Content>
           </DropdownMenu.Root>
         </div>
-      </div>
-      {/* Main Content Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      </header>
+
+      {/* Mobile New Donation Button */}
+      {role === "donor" && (
+        <div className="sm:hidden mb-4">
+          <Link to="/donate">
+            <button className="w-full bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white px-4 py-3 rounded-lg font-medium flex items-center justify-center transition-all shadow-md hover:shadow-lg active:scale-95">
+              <Plus className="mr-2" size={18} />
+              New Donation
+            </button>
+          </Link>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="space-y-4 md:space-y-6">
         {/* Donations Section */}
-        <div className="bg-white rounded-xl shadow-sm p-4 lg:col-span-3">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-gray-800">
+        <div className="bg-white rounded-xl shadow-md p-2 md:p-4 transition-all hover:shadow-lg">
+          <div className="flex justify-between items-center mb-3 md:mb-4">
+            <h2 className="text-lg md:text-xl font-semibold text-gray-800">
               {role === "donor" ? "Your Donations" : "Available Donations"}
             </h2>
             <Link
               to="/view-more"
-              className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+              className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1 text-sm md:text-base"
             >
               See More
               <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
+                className="w-4 h-4"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -514,131 +507,260 @@ const Dashboard: React.FC = () => {
           </div>
 
           {role === "donor" ? (
-            donations.length > 0 ? (
-              <UploadedDonations donations={visibleDonatons} />
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <p>You haven't added any donations yet.</p>
-                <Link
-                  to="/donate"
-                  className="text-blue-600 hover:underline mt-2 inline-block"
-                >
-                  Click "New Donation" to get started!
-                </Link>
-              </div>
-            )
+            <UploadedDonations
+              donations={visibleDonations}
+              onDonationDeleted={handleDonationDeleted}
+              onDonationUpdated={handleDonationUpdated}
+              auth={{ token: token }}
+            />
           ) : (
             <AllMatches
-              profile={dashData.profile}
-              initialMatches={unclaimedRecipientMatches}
+              profile={profile}
+              initialMatches={unclaimedAndUnmissedRecipientMatches}
               onClaimSuccess={handleClaimSuccess}
             />
           )}
         </div>
-
         {/* Top Users Section */}
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">
+        <div className="bg-white space-y-4 rounded-xl shadow-md p-4 md:p-6 transition-all hover:shadow-lg">
+          <h2 className="text-lg md:text-xl font-semibold text-gray-800 mb-3 md:mb-4">
             {role === "donor" ? "Top Recipients" : "Top Donors"}
-          </h3>
-
+          </h2>
           {topUsers.length > 0 ? (
-            <div className="space-y-3">
-              {topUsers.map((user, index) => (
-                <div
+            <ul className="space-y-2 md:space-y-3">
+              {topUsers.slice(0, 5).map((user, index) => (
+                <li
                   key={index}
-                  className="flex items-center p-3 rounded-lg hover:bg-gray-50"
+                  className="flex items-center justify-between p-2 md:p-3 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer"
+                  onClick={() => {
+                    /* Add click handler if needed */
+                  }}
                 >
-                  <CustomAvatar />
-                  <div className="ml-3 flex-1">
-                    <h4 className="font-medium text-gray-800">{user.name}</h4>
-                    <p className="text-sm text-gray-500">
-                      {user.total_quantity_kg}kg
-                    </p>
+                  <div className="flex items-center">
+                    <div className="relative">
+                      <CustomAvatar />
+                      <span className="absolute -bottom-1 -right-1 bg-blue-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                        {index + 1}
+                      </span>
+                    </div>
+                    <span className="ml-3 font-medium text-gray-700 truncate max-w-[120px] md:max-w-[180px]">
+                      {user.name}
+                    </span>
                   </div>
-                </div>
+                  <span className="text-gray-600 font-medium">
+                    {user.total_quantity_kg} kg
+                  </span>
+                </li>
               ))}
-            </div>
+            </ul>
           ) : (
-            <div className="text-center py-8 text-gray-500">
-              No {role === "donor" ? "recipients" : "donors"} data available
+            <div className="flex flex-col items-center justify-center py-6 text-gray-400">
+              <svg
+                className="w-12 h-12 mb-3 text-gray-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeWidth="1.5"
+                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                />
+              </svg>
+              <p className="text-center text-sm md:text-base">
+                No {role === "donor" ? "recipients" : "donors"} data available
+                yet
+              </p>
             </div>
           )}
         </div>
-      </div>
-      {/* Statistics Chart */}
-      <section className="mt-6 mb-8">
-        {" "}
-        {/* Added margin-bottom */}
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">
+
+        {/* Doughnut Chart Section */}
+        <div className="bg-white rounded-xl shadow-md p-4 md:p-6 transition-all hover:shadow-lg">
+          <h2 className="text-lg md:text-xl font-semibold text-gray-800 mb-3 md:mb-4">
             Donation Statistics
-          </h3>
-          <div className="h-48">
-            {" "}
-            {/* Reduced height from h-64 */}
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar
-                  dataKey="value"
-                  fill="url(#colorGradient)"
-                  radius={[4, 4, 0, 0]}
-                />
-                <defs>
-                  <linearGradient
-                    id="colorGradient"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
+          </h2>
+          <div className="h-64">
+            {chartData ? (
+              <Doughnut
+                data={chartData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: {
+                      position: window.innerWidth < 768 ? "bottom" : "right",
+                      labels: {
+                        usePointStyle: true,
+                        padding: 10,
+                        font: {
+                          size: window.innerWidth < 768 ? 10 : 12,
+                        },
+                      },
+                    },
+                    tooltip: {
+                      enabled: true,
+                      callbacks: {
+                        label: function (context) {
+                          return `${context.label}: ${context.raw}`;
+                        },
+                      },
+                    },
+                  },
+                  cutout: "60%",
+                  animation: {
+                    animateScale: true,
+                    animateRotate: true,
+                  },
+                }}
+              />
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-gray-400 p-4">
+                <div className="w-32 h-3 border-t-42 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                  <svg
+                    className="w-16 h-16 text-gray-300"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
                   >
-                    <stop offset="0%" stopColor="#3B82F6" /> {/* Blue */}
-                    <stop offset="100%" stopColor="#10B981" /> {/* Green */}
-                  </linearGradient>
-                </defs>
-              </BarChart>
-            </ResponsiveContainer>
+                    <path
+                      strokeLinecap="round"
+                      strokeWidth="1.5"
+                      d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeWidth="1.5"
+                      d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"
+                    />
+                  </svg>
+                </div>
+                <p className="text-center text-sm md:text-base">
+                  No donation data available yet. <br />
+                  {role === "donor"
+                    ? "Start donating to see statistics!"
+                    : "Check back later for updates."}
+                </p>
+              </div>
+            )}
           </div>
         </div>
-        {/* Stats Cards with dual-colored borders */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mt-6">
-          {" "}
-          {/* Added margin-top */}
-          <StatsCard
-            title="Total Donations"
-            value={stats?.total_donations || 0}
-            color="border-t-blue-600 border-r-green-600"
-          />
-          <StatsCard
-            title="Today's Donations"
-            value={stats?.donations_today || 0}
-            color="border-t-green-600 border-r-blue-600"
-          />
-          <StatsCard
-            title="Claimed Donations"
-            value={stats?.claimed_donations || 0}
-            color="border-t-blue-500 border-r-green-500"
-          />
-          <StatsCard
-            title="Avg. Donations"
-            value={stats?.average_donation || 0}
-            color="border-t-green-500 border-r-blue-500"
-          />
-          <StatsCard
-            title={role === "donor" ? "Total Recipients" : "Total Donors"}
-            value={
-              role === "donor"
-                ? stats?.total_recipients || 0
-                : stats?.total_donors || 0
-            }
-            color="border-t-blue-400 border-r-green-400"
-          />
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+          <div className="bg-white rounded-xl shadow-md p-3 md:p-4 border-t-4  hover:shadow-lg hover:-translate-y-1">
+            <h4 className="text-xs md:text-sm text-gray-500 mb-1">
+              {role === "donor" ? "Total Donations" : "Total Received"}
+            </h4>
+            <p className="text-xl md:text-2xl font-bold text-gray-800">
+              {stats.total_donations || 0}
+            </p>
+          </div>
+          <div className="bg-white rounded-xl shadow-md p-3 md:p-4 border-t-4  hover:shadow-lg hover:-translate-y-1">
+            <h4 className="text-xs md:text-sm text-gray-500 mb-1">
+              {role === "donor" ? "Today's Donations" : "Received Today"}
+            </h4>
+            <p className="text-xl md:text-2xl font-bold text-gray-800">
+              {stats.donations_today || 0}
+            </p>
+          </div>
+          <div className="bg-white rounded-xl shadow-md p-3 md:p-4 border-t-4  hover:shadow-lg hover:-translate-y-1">
+            <h4 className="text-xs md:text-sm text-gray-500 mb-1">
+              {role === "donor" ? "Claimed Donations" : "Claimed Today"}
+            </h4>
+            <p className="text-xl md:text-2xl font-bold text-gray-800">
+              {stats.claimed_donations || 0}
+            </p>
+          </div>
         </div>
-      </section>
-    </main>
+
+        {/* Additional Stats Section */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+          {/* Average Donations */}
+          <div className="bg-white rounded-xl shadow-md p-3 md:p-4  border-t-4 hover:shadow-lg hover:-translate-y-1">
+            <h4 className="text-xs md:text-sm text-gray-500 mb-1">
+              {role === "donor" ? "Avg. Donations" : "Avg. Received"}
+            </h4>
+            <p className="text-xl md:text-2xl font-bold text-gray-800">
+              {stats.average_donation !== undefined
+                ? stats.average_donation
+                : "N/A"}
+            </p>
+          </div>
+
+          {/* Conditional display for Total Donors/Recipients based on role */}
+          {role === "donor" && (
+            <div className="bg-white rounded-xl shadow-md p-3 md:p-4 border-t-4  hover:shadow-lg hover:-translate-y-1">
+              <h4 className="text-xs md:text-sm text-gray-500 mb-1">
+                Total Recipients
+              </h4>
+              <p className="text-xl md:text-2xl font-bold text-gray-800">
+                {stats.total_recipients !== undefined
+                  ? stats.total_recipients
+                  : "N/A"}
+              </p>
+            </div>
+          )}
+
+          {role === "recipient" && (
+            <div className="bg-white rounded-xl shadow-md p-3 md:p-4 border-t-4 border-gradient bg-gradient-to-r from-blue-500 to-green-500 transition-all hover:shadow-lg hover:-translate-y-1">
+              <h4 className="text-xs md:text-sm text-gray-500 mb-1">
+                Total Donors
+              </h4>
+              <p className="text-xl md:text-2xl font-bold text-gray-800">
+                {stats.total_donors !== undefined ? stats.total_donors : "N/A"}
+              </p>
+            </div>
+          )}
+
+          {/* Admin-specific stats */}
+          {role === "admin" && (
+            <>
+              <div className="bg-white rounded-xl shadow-md p-3 md:p-4 border-t-4 border-gradient bg-gradient-to-r from-blue-500 to-green-500 transition-all hover:shadow-lg hover:-translate-y-1">
+                <h4 className="text-xs md:text-sm text-gray-500 mb-1">
+                  Platform Total
+                </h4>
+                <p className="text-xl md:text-2xl font-bold text-gray-800">
+                  {stats.total_platform_received !== undefined
+                    ? `${stats.total_platform_received.toFixed(0)}kg`
+                    : "N/A"}
+                </p>
+              </div>
+              <div className="bg-white rounded-xl shadow-md p-3 md:p-4 border-t-4 border-gradient bg-gradient-to-r from-blue-500 to-green-500 transition-all hover:shadow-lg hover:-translate-y-1">
+                <h4 className="text-xs md:text-sm text-gray-500 mb-1">
+                  Today's Platform
+                </h4>
+                <p className="text-xl md:text-2xl font-bold text-gray-800">
+                  {stats.platform_received_today !== undefined
+                    ? `${stats.platform_received_today.toFixed(0)}kg`
+                    : "N/A"}
+                </p>
+              </div>
+              <div className="bg-white rounded-xl shadow-md p-3 md:p-4 border-t-4 border-gradient bg-gradient-to-r from-blue-500 to-green-500 transition-all hover:shadow-lg hover:-translate-y-1">
+                <h4 className="text-xs md:text-sm text-gray-500 mb-1">
+                  Total Donors
+                </h4>
+                <p className="text-xl md:text-2xl font-bold text-gray-800">
+                  {stats.total_donors !== undefined
+                    ? stats.total_donors
+                    : "N/A"}
+                </p>
+              </div>
+              <div className="bg-white rounded-xl shadow-md p-3 md:p-4 border-t-4 border-gradient bg-gradient-to-r from-blue-500 to-green-500 transition-all hover:shadow-lg hover:-translate-y-1">
+                <h4 className="text-xs md:text-sm text-gray-500 mb-1">
+                  Total Recipients
+                </h4>
+                <p className="text-xl md:text-2xl font-bold text-gray-800">
+                  {stats.total_recipients !== undefined
+                    ? stats.total_recipients
+                    : "N/A"}
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 

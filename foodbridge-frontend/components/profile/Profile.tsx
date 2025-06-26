@@ -1,8 +1,9 @@
+
+
 import CustomAvatar from "../UI/Avatar";
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { FaPen } from "react-icons/fa";
-// import {AiFillMail} from 'react-icons/ai'
 import { useAuthStore } from "../../store/authStore";
 
 interface DonorProfile {
@@ -18,18 +19,15 @@ interface RecipientProfile {
 }
 
 interface ProfileData {
-  // user: User;
-  // name:string;
   role: string;
   email: string;
   contact_phone: string;
-  // required_food_type: string;
   required_quantity: string;
   donor_profile?: DonorProfile;
   recipient_profile?: RecipientProfile;
 }
 
-const Profile: React.FC<ProfileData> = () => {
+const Profile: React.FC = () => {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -68,8 +66,21 @@ const Profile: React.FC<ProfileData> = () => {
     fetchProfile();
   }, [token]);
 
-  if (loading) return <div>Loading profile...</div>;
-  if (error) return <div>Error: {error}</div>;
+  if (loading)
+    return (
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-blue-50 to-green-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+
+  if (error)
+    return (
+      <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mx-4 my-6">
+        <p className="font-bold">Error</p>
+        <p>{error}</p>
+      </div>
+    );
+
   if (!profile) return null;
 
   const { role, contact_phone, recipient_profile, donor_profile, email } =
@@ -82,211 +93,292 @@ const Profile: React.FC<ProfileData> = () => {
     ? donor_profile.donor_name
     : "";
 
+  // Stats data - would normally come from API
+  const stats = [
+    {
+      title: "Pending Donations",
+      value: 3,
+      color: "bg-yellow-100 text-yellow-600",
+    },
+    {
+      title: "Accepted Donations",
+      value: "12",
+      color: "bg-blue-100 text-blue-600",
+    },
+    {
+      title: "Completed Donations",
+      value: 6,
+      color: "bg-green-100 text-green-600",
+    },
+    {
+      title: "Total Impact",
+      value: "50+",
+      color: "bg-purple-100 text-purple-600",
+    },
+  ];
+
+  const tasks = [
+    {
+      task: "Complete your profile setup",
+      progress: profile.contact_phone ? 100 : 40,
+      members: 1,
+      icon: "📝",
+    },
+    {
+      task: "Make your first donation",
+      progress: role === "donor" ? 75 : 0,
+      members: 1,
+      icon: "🍞",
+    },
+    {
+      task: "Connect with local organizations",
+      progress: 25,
+      members: 3,
+      icon: "🤝",
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-6 font-sans">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Section - Main Content */}
-        <div className="col-span-2 bg-white rounded-xl p-6 shadow-lg border border-green-100">
-          {/* Profile Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-4">
-              <CustomAvatar />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">{name}</h1>
-                <div className="flex items-center gap-2 mt-1">
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      role === "donor"
-                        ? "bg-blue-100 text-blue-800"
-                        : "bg-green-100 text-green-800"
-                    }`}
-                  >
-                    {role}
-                  </span>
-                  <span className="text-gray-600 text-sm flex items-center">
-                    {email}
-                  </span>
-                  <span className="text-gray-600 text-sm flex items-center">
-                    📞 {contact_phone}
-                  </span>
-                </div>
-                {recipient_profile && (
-                  <div className="mt-2 space-y-1">
-                    <p className="text-sm text-gray-600">
-                      <span className="font-medium text-green-700">
-                        Food Needed:
-                      </span>{" "}
-                      {Array.isArray(reqFood) ? reqFood.join(", ") : reqFood}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      <span className="font-medium text-green-700">
-                        Quantity:
-                      </span>{" "}
-                      {reqQuantity}
-                    </p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
+            Your Profile
+          </h1>
+          <p className="text-gray-600">
+            Manage your account and view your impact
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Profile Info */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Profile Card */}
+            <div className="bg-white rounded-xl shadow-md overflow-hidden">
+              <div className="p-6">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center space-x-4">
+                    <CustomAvatar />
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-800">
+                        {name}
+                      </h2>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            role === "donor"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-green-100 text-green-800"
+                          }`}
+                        >
+                          {role.toUpperCase()}
+                        </span>
+                        <span className="text-sm text-gray-500">{email}</span>
+                      </div>
+                    </div>
                   </div>
-                )}
+                  <Link
+                    to="/edit-profile"
+                    className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 transition-colors"
+                  >
+                    <FaPen className="h-4 w-4" />
+                    <span className="text-sm font-medium">Edit</span>
+                  </Link>
+                </div>
+
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-500">Contact</p>
+                    <p className="font-medium">{contact_phone}</p>
+                  </div>
+                  {recipient_profile && (
+                    <>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <p className="text-sm text-gray-500">
+                          Food Preferences
+                        </p>
+                        <p className="font-medium">
+                          {Array.isArray(reqFood)
+                            ? reqFood.join(", ")
+                            : reqFood}
+                        </p>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <p className="text-sm text-gray-500">
+                          Required Quantity
+                        </p>
+                        <p className="font-medium">{reqQuantity} kg</p>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
-            <Link
-              to="/edit-profile"
-              className="p-2 rounded-full hover:bg-blue-50 transition-colors"
-            >
-              <FaPen className="h-4 w-4 text-blue-600 hover:text-blue-800" />
-            </Link>
-          </div>
 
-          {/* Quick Actions */}
-          <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg p-4 mb-8 border border-blue-200">
-            <div className="flex justify-between items-center">
-              <div>
-                <p className="text-sm text-blue-700 font-medium">
-                  Continue your impact
-                </p>
-                <p className="text-gray-700">
-                  Complete the two hours design sprint
-                </p>
-              </div>
-              <button className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 px-4 py-2 rounded-md text-white font-medium transition-all">
-                Jump to project
-              </button>
-            </div>
-          </div>
-
-          {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            {[
-              {
-                label: "Pending",
-                value: "3",
-                bg: "bg-amber-100",
-                text: "text-amber-800",
-              },
-              {
-                label: "Accepted",
-                value: "40%",
-                bg: "bg-blue-100",
-                text: "text-blue-800",
-              },
-              {
-                label: "Completed",
-                value: "6",
-                bg: "bg-green-100",
-                text: "text-green-800",
-              },
-              {
-                label: "Declined",
-                value: "2",
-                bg: "bg-red-100",
-                text: "text-red-800",
-              },
-            ].map((stat, index) => (
-              <div
-                key={index}
-                className={`${stat.bg} p-4 rounded-lg border ${stat.bg
-                  .replace("bg-", "border-")
-                  .replace("-100", "-200")} text-center`}
-              >
-                <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
-                <p className={`text-2xl font-bold ${stat.text}`}>
-                  {stat.value}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          {/* Tasks Section */}
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-              Active Tasks
-            </h2>
-            <div className="space-y-3">
-              {[
-                { task: "Start the design sprint", progress: 43, members: 7 },
-                { task: "Complete Travto docs", progress: 26, members: 2 },
-                { task: "A/B Testing with team", progress: 32, members: 1 },
-              ].map((task, index) => (
+            {/* Stats Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {stats.map((stat, index) => (
                 <div
                   key={index}
-                  className="group p-4 bg-white rounded-lg border border-gray-200 hover:border-green-300 transition-all"
+                  className="bg-white rounded-xl shadow-md p-4 hover:shadow-lg transition-shadow"
                 >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="font-medium text-gray-800 group-hover:text-green-700 transition-colors">
-                        {task.task}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        👥 {task.members} members
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full ${
-                            task.progress > 50 ? "bg-green-500" : "bg-blue-500"
-                          } transition-all duration-500`}
-                          style={{ width: `${task.progress}%` }}
-                        />
-                      </div>
-                      <span
-                        className={`text-xs font-medium ${
-                          task.progress > 50
-                            ? "text-green-700"
-                            : "text-blue-700"
-                        }`}
-                      >
-                        {task.progress}%
-                      </span>
-                    </div>
-                  </div>
+                  <p className="text-sm text-gray-500">{stat.title}</p>
+                  <p
+                    className={`text-2xl font-bold mt-1 ${
+                      stat.color.split(" ")[1]
+                    }`}
+                  >
+                    {stat.value}
+                  </p>
                 </div>
               ))}
             </div>
+
+            {/* Tasks Section */}
+            <div className="bg-white rounded-xl shadow-md overflow-hidden">
+              <div className="p-6">
+                <h3 className="text-xl font-bold text-gray-800 mb-4">
+                  Your Progress
+                </h3>
+                <div className="space-y-4">
+                  {tasks.map((task, index) => (
+                    <div key={index} className="group">
+                      <div className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-xl">{task.icon}</span>
+                          <div>
+                            <p className="font-medium">{task.task}</p>
+                            <p className="text-xs text-gray-500">
+                              {task.members}{" "}
+                              {task.members === 1 ? "member" : "members"}{" "}
+                              working
+                            </p>
+                          </div>
+                        </div>
+                        <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full ${
+                              task.progress === 100
+                                ? "bg-green-500"
+                                : "bg-blue-500"
+                            }`}
+                            style={{ width: `${task.progress}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-sm font-medium w-10 text-right">
+                          {task.progress}%
+                        </span>
+                      </div>
+                      {index < tasks.length - 1 && (
+                        <div className="border-t border-gray-100 mx-3 group-last:hidden"></div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* Right Section - Stats */}
-        <div className="bg-white rounded-xl p-6 shadow-lg border border-blue-100">
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-100 to-green-100 rounded-full mb-3 border border-blue-200">
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
-                70%
-              </span>
+          {/* Right Column - Impact Summary */}
+          <div className="space-y-6">
+            {/* Impact Card */}
+            <div className="bg-white rounded-xl shadow-md overflow-hidden">
+              <div className="p-6">
+                <h3 className="text-xl font-bold text-gray-800 mb-4">
+                  Your Impact
+                </h3>
+                <div className="flex items-center justify-center mb-4">
+                  <div className="relative w-40 h-40">
+                    <svg className="w-full h-full" viewBox="0 0 100 100">
+                      {/* Background circle */}
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="45"
+                        fill="none"
+                        stroke="#e2e8f0"
+                        strokeWidth="8"
+                      />
+                      {/* Progress circle */}
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="45"
+                        fill="none"
+                        stroke="#3b82f6"
+                        strokeWidth="8"
+                        strokeDasharray="283"
+                        strokeDashoffset={283 - 283 * 0.7}
+                        strokeLinecap="round"
+                        transform="rotate(-90 50 50)"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center flex-col">
+                      <span className="text-3xl font-bold text-blue-600">
+                        70%
+                      </span>
+                      <span className="text-sm text-gray-500">Completion</span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-center text-gray-600">
+                  You're making great progress! Keep going to maximize your
+                  impact.
+                </p>
+              </div>
             </div>
-            <h3 className="text-lg font-medium text-gray-900">
-              Performance Score
-            </h3>
-            <p className="text-sm bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent font-medium mt-1">
-              🎯 Fantastic job!
-            </p>
-          </div>
 
-          <div className="space-y-4">
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-              <p className="text-sm font-medium text-blue-800 mb-1">
-                Performance
-              </p>
-              <p className="text-sm font-semibold text-green-600 flex items-center">
-                <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                +12% improvement
-              </p>
+            {/* Quick Actions */}
+            <div className="bg-white rounded-xl shadow-md overflow-hidden">
+              <div className="p-6">
+                <h3 className="text-xl font-bold text-gray-800 mb-4">
+                  Quick Actions
+                </h3>
+                <div className="space-y-3">
+                  <Link
+                    to={
+                      role === "donor" ? "/create-donation" : "/find-donations"
+                    }
+                    className="block w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-green-500 text-white text-center rounded-lg hover:from-blue-600 hover:to-green-600 transition-colors"
+                  >
+                    {role === "donor"
+                      ? "Create New Donation"
+                      : "Find Donations"}
+                  </Link>
+                  <Link
+                    to="/donations-history"
+                    className="block w-full px-4 py-3 bg-gray-100 text-gray-800 text-center rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    View History
+                  </Link>
+                </div>
+              </div>
             </div>
 
-            <div className="p-4 bg-green-50 rounded-lg border border-green-100">
-              <p className="text-sm font-medium text-green-800 mb-1">
-                Success Rate
-              </p>
-              <p className="text-sm font-semibold text-blue-600">
-                85% completion
-              </p>
-            </div>
-
-            <div className="p-4 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border border-blue-200">
-              <p className="text-sm font-medium text-gray-700 mb-1">Activity</p>
-              <p className="text-sm font-semibold text-green-700">
-                12 tasks this week
-              </p>
+            {/* Achievement Badges */}
+            <div className="bg-white rounded-xl shadow-md overflow-hidden">
+              <div className="p-6">
+                <h3 className="text-xl font-bold text-gray-800 mb-4">
+                  Achievements
+                </h3>
+                <div className="flex flex-wrap gap-3">
+                  <div className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-medium flex items-center">
+                    🏆 First Donation
+                  </div>
+                  <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium flex items-center">
+                    🌟 Super Helper
+                  </div>
+                  <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium flex items-center">
+                    ♻️ Eco Warrior
+                  </div>
+                  {role === "donor" && (
+                    <div className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-xs font-medium flex items-center">
+                      🍞 Food Hero
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>

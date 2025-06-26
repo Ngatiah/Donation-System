@@ -1,34 +1,5 @@
-// const App: React.FC = () => {
-//   const location = useLocation();
-//   const isAuth =
-//     location.pathname === "/login" || location.pathname === "/register";
-//   return (
-//     <div className="flex">
-//       {!isAuth && <Sidebar />}
 
-//       <main>
-//         <Routes>
-//           <Route path="/" element={<Navigate to="/login" />} />
-//           <Route path="login" element={<SignIn />} />
-//           <Route path="logout" element={<Logout />} />
-//           <Route path="register" element={<SignUp />} />
-//           <Route path="home" element={<Dashboard />} />
-//           <Route path="view-profile" element={<Profile />} />
-//           <Route path="edit-profile" element={<EditProfile />} />
-
-//           <Route path="donate" element={<Donate />} />
-
-//           <Route path="view-more" element={<ViewMore />} />
-
-//           <Route path="donations-history" element={<DonationHistory />} />
-//         </Routes>
-//       </main>
-//     </div>
-//   );
-// };
-
-// export default App;
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Route, Routes, Navigate, useLocation } from "react-router-dom";
 import Dashboard from "../components/miscellaneous/Dashboard";
 import SignUp from "../components/auth/register";
@@ -40,76 +11,43 @@ import Donate from "../components/donations/Donate";
 import Logout from "../components/auth/logout";
 import DonationHistory from "../components/donations/DonationHistory";
 import ViewMore from "../components/donations/ViewMore";
-import { Menu } from "lucide-react";
 import ForgotPassword from "../components/auth/ForgotPassword";
 import EditDonation from "../components/donations/EditDonation";
 const App: React.FC = () => {
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  // const isAuth =
-  //   location.pathname === "/login" || location.pathname === "/register";
-  const isAuth = ["/login", "/register", "/forgot-password"].includes(
+  {/* const isAuth =
+    location.pathname === "/login" || location.pathname === "/register"; */}
+    const isAuth = ["/login", "/register", "/forgot-password"].includes(
     location.pathname
   );
-
-  useEffect(() => {
-    setSidebarOpen(false);
-  }, [location]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-blue-100 to-green-100  ">
-      {/* Sidebar - overlay on mobile, always visible on desktop */}
+    <div className="min-h-screen w-full bg-gradient-to-b from-blue-50 to-green-50 flex overflow-auto">
       {!isAuth && (
-        <>
-          <div
-            className={`fixed inset-0 bg-black/50 z-20 transition-opacity duration-300 md:hidden ${
-              sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-            }`}
-            onClick={() => setSidebarOpen(false)}
-          />
-
-          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        </>
+        <Sidebar
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
       )}
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col transition-all duration-300 overflow-hidden">
-        {/* Mobile header */}
-        {!isAuth && (
-          <header className="bg-white shadow-sm md:hidden sticky top-0 z-10">
-            <div className="flex items-center justify-between p-4">
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="p-2 rounded-md text-blue-600 hover:bg-blue-50"
-              >
-                <Menu className="h-6 w-6" />
-              </button>
-              <h1 className="text-xl font-bold text-blue-800">
-                Food<span className="text-green-600">Bridge</span>
-              </h1>
-              <div className="w-6"></div>
-            </div>
-          </header>
-        )}
+      <main className="flex-1 w-full min-h-screen overflow-hidden">
+        <Routes>
+          <Route path="/" element={<Navigate to="/login" />} />
+          <Route path="login" element={<SignIn />} />
+          <Route path="forgot-password" element={<ForgotPassword />} />
+          <Route path="edit-donation" element={<EditDonation />} />
 
-        {/* Page content */}
-        <main className="flex-1 p-4 md:p-6 overflow-auto">
-          <Routes>
-            <Route path="/" element={<Navigate to="/login" />} />
-            <Route path="login" element={<SignIn />} />
-            <Route path="logout" element={<Logout />} />
-            <Route path="register" element={<SignUp />} />
-            <Route path="forgot-password" element={<ForgotPassword />} />
-            <Route path="home" element={<Dashboard />} />
-            <Route path="view-profile" element={<Profile />} />
-            <Route path="edit-profile" element={<EditProfile />} />
-            <Route path="edit-donation" element={<EditDonation />} />
-            <Route path="donate" element={<Donate />} />
-            <Route path="view-more" element={<ViewMore />} />
-            <Route path="donations-history" element={<DonationHistory />} />
-          </Routes>
-        </main>
-      </div>
+          <Route path="logout" element={<Logout />} />
+          <Route path="register" element={<SignUp />} />
+          <Route path="home" element={<Dashboard />} />
+          <Route path="view-profile" element={<Profile />} />
+          <Route path="edit-profile" element={<EditProfile />} />
+          <Route path="donate" element={<Donate />} />
+          <Route path="view-more" element={<ViewMore />} />
+          <Route path="donations-history" element={<DonationHistory />} />
+        </Routes>
+      </main>
     </div>
   );
 };
