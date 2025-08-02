@@ -67,6 +67,7 @@ class Recipient(models.Model):
 
     def __str__(self):
         return f"{self.user.name} needs {self.required_food_type} ({self.required_quantity})"
+    
 
 class Donation(models.Model):
     donor = models.ForeignKey('Donor', on_delete=models.CASCADE, related_name='donations')
@@ -144,7 +145,16 @@ def notify_recipient_on_claim(sender, instance, **kwargs):
             # Optionally, update the match state
             match.is_missed = True
             match.save()
+
             
+            
+class RecipientNeedLog(models.Model):
+    recipient = models.ForeignKey('Recipient', on_delete=models.CASCADE, related_name='need_logs')
+    food_type = models.JSONField(default=list, blank=True, null=True)
+    quantity = models.FloatField()
+    urgency = models.CharField(max_length=50, choices=[('low', 'Low'), ('medium', 'Medium'), ('high', 'High')])
+    created_at = models.DateTimeField(auto_now_add=True)
+
 
 # class Feedback(models.Model):
 #     match = models.OneToOneField(DonationMatch, on_delete=models.CASCADE)

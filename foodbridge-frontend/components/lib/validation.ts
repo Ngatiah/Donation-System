@@ -1,6 +1,7 @@
 // import { boolean, z } from "zod";
 import { z } from "zod";
 import {parsePhoneNumberFromString} from 'libphonenumber-js'
+
 export const signUpSchema = z
   .object({
     name: z.string().min(3, "Name is required"),
@@ -25,11 +26,12 @@ export const signUpSchema = z
         contact_phone: z
     .string()
     .min(9, "Phone number must be at least 9 characters long")
+    .regex(/^7\d{8}$/, "Phone number must start with 7 and be 9 digits long")
     .refine((val) => {
       const phone = parsePhoneNumberFromString(val,'KE');
       return phone?.isValid() ?? false;
     }, {
-      message: "Enter a valid phone number",
+      message: "Enter a valid Kenyan phone number",
     })
     .transform((val) => {
       const phone = parsePhoneNumberFromString(val,'KE');
@@ -56,7 +58,6 @@ export const signUpSchema = z
       }
     }
   });
-
 
 
 export const signInSchema = z.object({
@@ -86,6 +87,14 @@ export const donationSchema = z.object({
 });
 
 export type DonationFormData = z.infer<typeof donationSchema>;
+
+
+// export const recipientNeedsSchema = signUpSchema.pick({
+//   food_type : true,
+//   quantity: true,
+// });
+
+// export type RecipientNeedsData = z.infer<typeof recipientNeedsSchema>;
 
 
 

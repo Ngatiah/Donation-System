@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate,useLocation} from "react-router-dom";
 import DonationForm from "../UI/forms/DonationForm";
 import { donationSchema, type DonationFormData } from "../lib/validation";
 
@@ -23,6 +24,12 @@ const EditDonation: React.FC<EditDonationProps> = ({
   onSubmit,
   onClose,
 }) => {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const allowedPaths = ['/home', '/view-more'];
+  const redirectPath = allowedPaths.includes(location.state?.from) ? location.state.from : '/view-more';
+
+
   // The defaultValues for DonationForm should be pre-processed here
   // to ensure expiry_date is a Date object and quantity is a number.
   // The initialValues prop will be coming from UploadedDonations
@@ -54,6 +61,13 @@ const EditDonation: React.FC<EditDonationProps> = ({
     return result;
   };
 
+
+    const handleCancel = () => {
+    onClose();
+    navigate(redirectPath);
+  };
+
+
   return (
     <div>
       <DonationForm
@@ -62,10 +76,14 @@ const EditDonation: React.FC<EditDonationProps> = ({
         defaultValues={preProcessedInitialValues} // Pass the pre-processed values
         onSubmit={handleFormSubmit}
       />
-      {/* Add a close button for the modal */}
       <button
         type="button"
-        onClick={onClose}
+        // onClick={onClose}
+        // onClick={()=>{
+        //   onClose()
+        //   navigate(redirectPath)
+        // }}
+        onClick={handleCancel}
         className="mt-4 w-full px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition"
       >
         Cancel

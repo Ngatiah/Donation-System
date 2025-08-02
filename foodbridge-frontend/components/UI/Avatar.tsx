@@ -64,7 +64,7 @@ const CustomAvatar : React.FC = ()=> {
 	fallback={getInitials(profileName)}
   // fallback={profileName}
   radius='full'
-  size='5'
+  size='4'
 	/>
     </Flex>
   )

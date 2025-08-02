@@ -1,65 +1,3 @@
-// import React from 'react';
-// import { useNavigate } from 'react-router-dom';
-
-// interface Donation {
-//     id: number;
-//     food_type: string;
-//     quantity: number;
-//     expiry_date: string;
-//     food_description?: string;
-//     created_at: string;
-// }
-
-// interface uploadedDonationsProps {
-//     donations: Donation[];
-// }
-
-// const UploadedDonations: React.FC<uploadedDonationsProps> = ({ donations }) => {
-//     const navigate = useNavigate()
-//     return (
-//         <div className="grid grid-cols-1 md:grid-cols-3 col-span-3">
-//              {donations.length > 0 ? (
-//                 donations.map((donation) => (
-//                     <div key={donation.id} className="bg-white p-4 rounded shadow-lg text-left">
-//                         <img src="/images/download (1).jpeg" alt="donated-img" className="rounded-md mb-2 w-full" />
-//                         <h3 className="font-semibold text-lg text-indigo-700">{donation.food_type}</h3>
-
-//                         <p className="text-sm text-gray-700">Quantity: {donation.quantity} kg</p>
-//                         <p className="text-sm text-gray-600 italic mt-1">{donation.food_description}</p>
-//                         <p className="text-xs text-gray-500 mt-1">Expires: {new Date(donation.expiry_date).toLocaleDateString()}</p>
-
-//                         {/* actions buttons */}
-//                         <div className='flex justify-between'>
-//                         <button
-//                             type='button'
-//                             className={`mt-3 p-2 font-medium text-sm rounded transition w-20 bg-green-400 text-white hover:bg-green-500`}
-//                             onClick={()=>navigate('/edit-donation')}
-//                         >
-//                             Edit
-//                         </button>
-//                         <button
-//                             type='button'
-//                             className={`mt-3 p-2 font-medium text-sm rounded transition w-20 bg-red-400 text-white hover:bg-red-500`}
-//                         >
-//                             Delete
-//                         </button>
-
-//                         </div>
-//                     </div>
-//                 ))
-//             ) : (
-
-//                 <div className="text-gray-500 col-span-3 mt-4 italic">
-//                     You haven't added any donations yet. Click "New Donation" to get started!
-//                 </div>
-//             )}
-
-//         </div>
-//     );
-// };
-
-// export default UploadedDonations;
-
 import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import type { DonationFormData } from "../lib/validation";
@@ -239,6 +177,8 @@ const UploadedDonations: React.FC<UploadedDonationsProps> = ({
     return () => window.removeEventListener("resize", updateVisibleCount);
   }, []);
 
+  
+
   // ensures no background loading
   useEffect(() => {
     document.body.style.overflow = isEditModalOpen ? "hidden" : "auto";
@@ -266,14 +206,15 @@ const UploadedDonations: React.FC<UploadedDonationsProps> = ({
         <div
           className={`grid grid-cols-1 ${
             columns >= 2 ? "sm:grid-cols-2" : ""
-          } ${columns >= 3 ? "lg:grid-cols-3" : ""} gap-4`}
+          } ${columns >= 3 ? "lg:grid-cols-3" : ""} gap-3`}
         >
           {visibleDonations.map((donation) => (
             <div
               key={donation.id}
-              className="bg-white rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col"
+              // className="text-left w-fit h-auto mx-3 px-2"
+                className="rounded-lg overflow-hidden text-left h-auto w-full md:w-auto px-2"
             >
-              <div className="relative h-40 overflow-hidden rounded-t-lg">
+              <div className="relative h-40 overflow-hidden rounded-lg mb-2">
                 <img
                   src="/images/download (1).jpeg"
                   alt="donated-img"
@@ -294,26 +235,28 @@ const UploadedDonations: React.FC<UploadedDonationsProps> = ({
                       {donation.quantity} kg
                     </p>
                     <p>
-                      <span className="font-medium">Expires:</span>{" "}
+                      <span className="font-medium">Expires on:</span>{" "}
                       {new Date(donation.expiry_date).toLocaleDateString()}
                     </p>
                   </div>
 
-                  {donation.food_description && (
+                  {/* {donation.food_description && (
                     <p className="text-sm text-gray-500 mt-2 line-clamp-2">
                       {donation.food_description}
                     </p>
-                  )}
+                  )} */}
                 </div>
 
-                <div className="mt-4 flex justify-between items-end">
+                <div className="mt-4 flex justify-between items-center gap-2">
+                    <div className="flex items-center">
                   <button
                     onClick={() => setViewingDonation(donation)}
-                    className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors px-2 py-1"
+                    className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors py-1 whitespace-nowrap"
                   >
                     View Details
                   </button>
-                  <div className="flex space-x-2">
+                  </div>
+                  <div className="flex space-x-3 px-3">
                     <button
                       onClick={() => handleEditClick(donation)}
                       disabled={isSubmitting}
@@ -504,6 +447,7 @@ const UploadedDonations: React.FC<UploadedDonationsProps> = ({
               </p>
               <div className="flex justify-end space-x-3">
                 <button
+                  type="button"
                   onClick={cancelDelete}
                   disabled={isSubmitting}
                   className="px-4 py-2 border border-gray-300 bg-white text-gray-700 text-sm font-medium rounded-md hover:bg-gray-50 transition-colors"

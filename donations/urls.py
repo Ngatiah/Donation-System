@@ -1,6 +1,6 @@
 # urls.py
 from django.urls import path
-from .views import UserLogin,UserRegistration,DonationsMatch,UserLogout,UserProfile,switch_role,Dashboard,DonationOptions,CreateOrListDonation,EditProfile,TimeRangeOptionsView,AvailabilityListAPIView,DonationsHistory,CityOptions,TopUsers,DonationStatisticsView,ClaimDonationMatchView,RetrieveUpdateDestroyDonation,RequestPasswordResetView,ResetPasswordView
+from .views import *
 # ,GenerateDonationReportView
 # ,VerifyEmailView
 
@@ -25,6 +25,10 @@ urlpatterns = [
 
     # recipients claiming donation matches
     path('matches/<int:match_id>/claim/',ClaimDonationMatchView.as_view() , name='claim-donation'),
+
+    # recipient monthy needs update : food type and quantity
+    # path("recipient-need-update/", RecipientNeedUpdate.as_view(), name="recipient-need-update")
+
 
     # EMAIL VERIFICATION
     # path('verify-email/<uidb64>/<token>/', VerifyEmailView.as_view(), name='verify-email')

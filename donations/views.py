@@ -1,12 +1,12 @@
 from knox.models import AuthToken
 from knox.auth import TokenAuthentication
 from rest_framework import generics
-from .serializers import UserSerializer,RegisterSerializer,LoginSerializer,DonationSerializer,ProfileSerializer,DonationHistorySerializer,DonorSerializer,RecipientSerializer,AvailabilitySerializer,TopUserSerializer
+from .serializers import UserSerializer,RegisterSerializer,LoginSerializer,DonationSerializer,ProfileSerializer,DonationHistorySerializer,DonorSerializer,RecipientSerializer,AvailabilitySerializer,TopUserSerializer,RecipientNeedUpdateSerializer
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from django.db import transaction
-from reportlab.pdfgen import canvas
+# from reportlab.pdfgen import canvas
 from django.http import HttpResponse
 from django.utils.timezone import localtime
 import io
@@ -18,7 +18,7 @@ from django.db.models import Sum, F,Count, Avg
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
-from .models import Donor,Recipient,DonationMatch,Donation,Availability
+from .models import Donor,Recipient,DonationMatch,Donation,Availability,RecipientNeedLog
 from rest_framework import status
 from knox.views import LogoutView as KnoxLogoutView
 from rest_framework.permissions import IsAuthenticated
@@ -1093,6 +1093,29 @@ class DonationStatisticsView(APIView):
             )
 
 
+class RecipientNeedUpdate(generics.RetrieveUpdateAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    # serializer_class = RecipientSerializer
+    serializer_class = RecipientNeedUpdateSerializer 
+    
+    def get_queryset(self):
+        return Recipient.objects.filter(user=self.request.user)
+    
+    def get_object(self):
+        # retrieve recipient profile of current user using first()
+        return self.get_queryset().first()
+    
+    def update(self, request, *args, **kwargs):
+        recipient = self.get_object()
+        recent_log = recipient.need_logs.order_by('-created_at').first()
+
+        if recent_log and (timezone.now() - recent_log.created_at < timedelta(days=30)):
+            raise PermissionDenied(detail="You can only update your food needs once every 30 days.")
+
+        return super().update(request, *args, **kwargs)
+
+
 # donors print their donation reports to show their contributions
 # class GenerateDonationReportView(APIView):
 #     authentication_classes = [TokenAuthentication]
@@ -1103,7 +1126,6 @@ class DonationStatisticsView(APIView):
 #             donor = Donor.objects.get(user=request.user)
 #         except Donor.DoesNotExist:
 #             return Response({'detail': 'Donor profile not found.'}, status=status.HTTP_400_BAD_REQUEST)
-
 #         donations = Donation.objects.filter(donor=donor, is_claimed=True).select_related('recipient')
 
 #         # if not donations.exists():

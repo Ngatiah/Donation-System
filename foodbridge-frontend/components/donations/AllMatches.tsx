@@ -216,18 +216,22 @@ const AllMatches: React.FC<RecipientMatchesProps> = ({
       )}
 
       {unclaimedMatches.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div 
+         className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4`}
+        // className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+        // className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+        >
           {unclaimedMatches.map((match) => (
             <div
               key={match.id}
-              className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200"
+              className="bg-white rounded-md shadow-lg text-left p-4 w-80 h-auto"
             >
-              <div className="p-4">
-                <div className="aspect-w-16 aspect-h-9 mb-3">
+              <div className="">
+                <div className="overflow-hidden rounded-lg mb-2">
                   <img
-                    src="/images/food-donation.jpg"
+                    src="/images/download (1).jpeg" 
                     alt={match.food_type}
-                    className="w-full h-48 object-cover rounded-md"
+                    className="w-full h-full object-cover"
                   />
                 </div>
 
@@ -235,25 +239,28 @@ const AllMatches: React.FC<RecipientMatchesProps> = ({
                   {match.food_type}
                 </h3>
 
-                <div className="space-y-1 text-sm text-gray-600">
+                <div className="space-y-1 text-base text-gray-600">
                   <p>
                     <span className="font-medium">From:</span>{" "}
                     {match.donor_name}
                   </p>
-                  <p>
+
+                  {/* <p>
                     <span className="font-medium">Quantity:</span>{" "}
                     {match.matched_quantity} kg
-                  </p>
+                  </p> */}
+
                   {match.food_description && (
                     <p className="italic">
                       <span className="font-medium">Details:</span>{" "}
                       {match.food_description}
                     </p>
                   )}
-                  <p>
+
+                  {/* <p>
                     <span className="font-medium">Expires:</span>{" "}
-                    {new Date(match.expiry_date).toLocaleDateString()}
-                  </p>
+                    {/* {new Date(match.expiry_date).toLocaleDateString()} */}
+                  {/* </p> */} 
                 </div>
 
                 <button
@@ -299,17 +306,44 @@ const AllMatches: React.FC<RecipientMatchesProps> = ({
           ))}
         </div>
       ) : (
-        <div className="bg-white p-6 rounded-lg shadow-sm text-center text-gray-600">
-          <p className="text-lg">
-            {noMatchesMessage ||
-              "No available donations matching your criteria."}
-          </p>
-          {profile.role === "recipient" && (
-            <p className="mt-2 text-sm">
-              Click "Find New Donations" to search again
-            </p>
-          )}
-        </div>
+       
+
+        <div className="text-center py-12">
+            <div className="mx-auto w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-4">
+              <svg
+                className="w-12 h-12 text-green-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                ></path>
+              </svg>
+            </div>
+            <h3 className="text-xl font-medium text-gray-800 mb-2">
+             { noMatchesMessage || 'No Available Donations'}
+            </h3>
+           {profile.role === 'recipient' && <p className="text-gray-600 max-w-md mx-auto">
+              Click the "Find New Donations" button for any updates
+            </p>}
+          </div>
+
+        // <div className="bg-white p-6 rounded-lg shadow-sm text-center text-gray-600">
+        //   <p className="text-lg">
+        //     {noMatchesMessage ||
+        //       "No available donations matching your criteria."}
+        //   </p>
+        //   {profile.role === "recipient" && (
+        //     <p className="mt-2 text-sm">
+        //       Click "Find New Donations" to search again
+        //     </p>
+        //   )}
+        // </div>
+
       )}
     </div>
   );

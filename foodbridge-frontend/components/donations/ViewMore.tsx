@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-// import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuthStore } from "../../store/authStore";
 import UploadedDonations from "./UploadedDonations";
 import AllMatches from "./AllMatches";
+import { Plus } from "lucide-react";
 
 interface Profile {
   role: string;
@@ -185,7 +186,7 @@ const ViewMore: React.FC = () => {
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
-    );
+    ); 
 
   if (error)
     return (
@@ -221,24 +222,35 @@ const ViewMore: React.FC = () => {
         {/* Header Section */}
         <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
-            {role === "donor" ? "Your Donation History" : "Available Donations"}
+            {role ===  "donor" ? "Your Donations" : "Available Donations"}
           </h1>
           <p className="text-gray-600">
             {role === "donor"
-              ? "View and manage all your contributions"
+              ? "Track and manage all your food donations"
               : "Find food donations that match your needs"}
           </p>
         </div>
 
         {/* Main Content */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="overflow-hidden">
           {role === "donor" ? (
-            <UploadedDonations
-              donations={undeletedDonations}
-              onDonationDeleted={handleDonationDeleted}
-              onDonationUpdated={handleDonationUpdated}
-              auth={{ token: token }}
-            />
+            <>
+            <div className="flex justify-end mb-4">
+            <Link to="/donate" className="hidden sm:inline-block">
+             <button className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white px-4 py-2 rounded-lg font-medium flex items-center transition-all shadow-md hover:shadow-lg active:scale-95">
+               <span className="text-sm md:text-base px-4">New Donation</span>
+               <Plus className="mr-1 md:mr-2" size={16} />
+             </button>
+           </Link>
+            </div>
+           
+           <UploadedDonations
+             donations={undeletedDonations}
+             onDonationDeleted={handleDonationDeleted}
+             onDonationUpdated={handleDonationUpdated}
+             auth={{ token: token }}
+           />
+            </>
           ) : (
             <AllMatches
               profile={profile}
@@ -248,10 +260,12 @@ const ViewMore: React.FC = () => {
           )}
         </div>
 
+
         {/* Empty State Handling */}
         {role === "donor" && undeletedDonations.length === 0 && (
           <div className="text-center py-12">
             <div className="mx-auto w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+              <Link to="/donate">
               <svg
                 className="w-12 h-12 text-blue-500"
                 fill="none"
@@ -265,21 +279,20 @@ const ViewMore: React.FC = () => {
                   d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                 ></path>
               </svg>
+              </Link>
             </div>
             <h3 className="text-xl font-medium text-gray-800 mb-2">
               No Donations Yet
             </h3>
             <p className="text-gray-600 max-w-md mx-auto">
-              You haven't created any food donations yet. Start by adding your
-              first donation.
+                Click the "+" button to start adding your donations.
             </p>
-            <button className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-              Create Donation
-            </button>
+
           </div>
         )}
 
-        {role === "recipient" && recipientUnclaimedMatches.length === 0 && (
+
+        {/* {role === "recipient" && recipientUnclaimedMatches.length === 0 && (
           <div className="text-center py-12">
             <div className="mx-auto w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-4">
               <svg
@@ -300,67 +313,13 @@ const ViewMore: React.FC = () => {
               No Available Donations
             </h3>
             <p className="text-gray-600 max-w-md mx-auto">
-              Currently there are no food donations matching your requirements.
-              Please check back later.
+              Click the "Find New Donations" button for any updates
             </p>
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );
 };
 
 export default ViewMore;
-
-//     if (loading) return <div className="animate-pulse text-gray-500 text-center mt-10">Loading detailed information...</div>;
-//     if (error) return <div className="text-red-600 text-center mt-10">Error: {error}</div>;
-//     if (!viewMoreData) return null;
-
-//     const { profile, all_matches_history, donations } = viewMoreData;
-//     const role = profile.role;
-
-//     if (!role) {
-//       return <div>Error: User role not found in profile data. Please ensure you are logged in.</div>;
-//     }
-
-//     // Recipients: Unclaimed  matches
-//     const recipientUnclaimedMatches = all_matches_history.filter(match =>
-//         match.recipient_name && !match.is_claimed && !match.is_missed
-//     )
-
-//     const undeletedDonations = donations.filter(donation => !donation.is_deleted)
-
-//     return (
-//         <main className="flex-1 p-6 w-full">
-//             <h1 className="text-4xl font-bold mb-6 text-center">
-//                 {role === 'donor' ? 'Your Donations' : 'Available Donations'}
-//             </h1>
-
-//             <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4
-//             w-full'>
-//             {/* <div className="p-4 col-span-4"> */}
-//             {role === 'donor' && (
-//                 <UploadedDonations
-//                 // donations={donations}
-//                 donations={undeletedDonations}
-//                 onDonationDeleted={handleDonationDeleted}
-//                 onDonationUpdated={handleDonationUpdated}
-//                 auth={{token:token}}
-//                 />
-//             )}
-
-//             {role === 'recipient' && (
-//                 <AllMatches
-//                 profile={profile}
-//                 initialMatches={recipientUnclaimedMatches}
-//                 onClaimSuccess={handleClaimSuccess}
-//                 />
-//             )}
-//             </div>
-//             {/* </div> */}
-
-//         </main>
-//     );
-// };
-
-// export default ViewMore;

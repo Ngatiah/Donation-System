@@ -74,6 +74,7 @@ const DonationHistory: React.FC = () => {
       <h2 className="text-3xl/10 font-bold mb-6 text-center">Donation History</h2>
       {error && <p className="text-red-600 text-center mb-4">{error}</p>}
       {history.length === 0 && !error && <p className="text-gray-600 text-center">No donations yet. Keep an eye out for new opportunities!</p>}
+    {/* No donations yet. You’ll see your contributions here once you get started! */}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {history.map((item: DonationHistoryItem) => (
@@ -85,11 +86,11 @@ const DonationHistory: React.FC = () => {
               // If the logged-in user is the donor for this match, display recipient's info
               <>
                 <p className="text-sm text-gray-700 mb-1">
-                  **Recipient:** <span className="font-medium">{item.recipient_name}</span>
+                  Recipient: <span className="font-medium">{item.recipient_name}</span>
                 </p>
                 {item.recipient_contact_phone && (
                   <p className="text-sm text-gray-700 mb-2">
-                    **Recipient Contact:** <span className="font-medium">{item.recipient_contact_phone}</span>
+                    Recipient Contact: <span className="font-medium">{item.recipient_contact_phone}</span>
                   </p>
                 )}
               </>
@@ -97,34 +98,34 @@ const DonationHistory: React.FC = () => {
               // If the logged-in user is the recipient for this match, display donor's info
               <>
                 <p className="text-sm text-gray-700 mb-1">
-                  **Donor:** <span className="font-medium">{item.donor_name}</span>
+                  Donor: <span className="font-medium">{item.donor_name}</span>
                 </p>
                 {item.donor_contact_phone && (
                   <p className="text-sm text-gray-700 mb-2">
-                    **Donor Contact:** <span className="font-medium">{item.donor_contact_phone}</span>
+                    Donor Contact: <span className="font-medium">{item.donor_contact_phone}</span>
                   </p>
                 )}
               </>
             ) : (
               <>
                 <p className="text-sm text-gray-700 mb-1">
-                  **Donor:** <span className="font-medium">{item.donor_name}</span>
+                  Donor: <span className="font-medium">{item.donor_name}</span>
                 </p>
                 <p className="text-sm text-gray-700 mb-2">
-                  **Recipient:** <span className="font-medium">{item.recipient_name}</span>
+                  Recipient: <span className="font-medium">{item.recipient_name}</span>
                 </p>
               </>
             )}
 
             {item.food_description && ( 
               <p className="text-sm text-gray-500">
-                **Description:** {item.food_description}
+                Description: {item.food_description}
               </p>
             )}
 
 
-           <p className="text-xs text-gray-500">
-              **Status:** <span className={`font-semibold ${
+           <p className="text-xs text-gray-500 py-2">
+              Status: <span className={`font-semibold ${
                 // item.is_claimed  ? 'text-blue-600'  : item.is_missed  ? 'text-red-600'  : 'text-yellow-600' 
                 item.is_claimed ? 'text-blue-600' :
                 item.is_donation_deleted ? 'text-red-600' : 

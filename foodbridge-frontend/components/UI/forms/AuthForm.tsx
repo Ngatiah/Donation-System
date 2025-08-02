@@ -106,7 +106,7 @@ function AuthForm<T extends FieldValues>({
   );
 
   const handleSubmit: SubmitHandler<T> = async (data) => {
-    console.log("FORM DATA", data);
+    // console.log("FORM DATA", data);
     setApiError(null);
 
     const result = await onSubmit(data);
@@ -124,7 +124,7 @@ function AuthForm<T extends FieldValues>({
       });
       setTimeout(() => {
         navigate("/home");
-      }, 3000);
+      }, 2000);
     } else {
       Swal.fire({
         title: `Error ${isSignIn ? "signing in" : "signing up"}`,
@@ -134,12 +134,14 @@ function AuthForm<T extends FieldValues>({
         timer: 2000,
         timerProgressBar: true,
       });
-    }
-    setApiError(
+
+      setApiError(
       result.error ||
         `An unexpected error occurred during ${type.toLowerCase()}.`
-    );
-    console.error(`${type} failed:`, result.error);
+      );
+
+    }
+
   };
 
   return (

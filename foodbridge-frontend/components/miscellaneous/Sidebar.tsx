@@ -7,7 +7,7 @@ import {
   Box,
   Clock,
   LogOut,
-  HeartHandshake,
+  // HeartHandshake,
   Menu,
   X,
 } from "lucide-react";
@@ -25,7 +25,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onToggle }) => {
       {/* Mobile Hamburger Button */}
       <button
         onClick={onToggle}
-        className={`md:hidden fixed top-4 left-4 z-50 p-2 rounded-full bg-gradient-to-r from-blue-600 to-green-600 text-white shadow-lg transition-all ${
+        className={`md:hidden fixed top-4 left-4 z-52 p-2 rounded-full bg-gradient-to-r from-blue-600 to-green-600 text-white shadow-lg transition-all ${
           isOpen ? "left-64" : "left-4"
         }`}
       >

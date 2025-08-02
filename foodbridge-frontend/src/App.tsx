@@ -13,6 +13,9 @@ import DonationHistory from "../components/donations/DonationHistory";
 import ViewMore from "../components/donations/ViewMore";
 import ForgotPassword from "../components/auth/ForgotPassword";
 import EditDonation from "../components/donations/EditDonation";
+// import NeedUpdateForm from '../components/UI/forms/NeedUpdateForm'
+
+
 const App: React.FC = () => {
   const location = useLocation();
   {/* const isAuth =
@@ -33,19 +36,28 @@ const App: React.FC = () => {
 
       <main className="flex-1 w-full min-h-screen overflow-hidden">
         <Routes>
+          {/* auth */}
           <Route path="/" element={<Navigate to="/login" />} />
-          <Route path="login" element={<SignIn />} />
-          <Route path="forgot-password" element={<ForgotPassword />} />
-          <Route path="edit-donation" element={<EditDonation />} />
-
-          <Route path="logout" element={<Logout />} />
           <Route path="register" element={<SignUp />} />
+          <Route path="login" element={<SignIn />} />
+          <Route path="logout" element={<Logout />} />
+          <Route path="forgot-password" element={<ForgotPassword />} />
+
+          {/* updates */}
+          {/* <Route path="edit-donation/:id" element={<EditDonation />} /> */}
+          <Route path="edit-donation" element={<EditDonation />} />
+          {/* <Route path="recipient-need-update" element={<NeedUpdateForm />} /> */}
+          <Route path="edit-profile" element={<EditProfile />} />
+
+ 
+          {/* main content*/}
           <Route path="home" element={<Dashboard />} />
           <Route path="view-profile" element={<Profile />} />
-          <Route path="edit-profile" element={<EditProfile />} />
           <Route path="donate" element={<Donate />} />
           <Route path="view-more" element={<ViewMore />} />
           <Route path="donations-history" element={<DonationHistory />} />
+
+
         </Routes>
       </main>
     </div>

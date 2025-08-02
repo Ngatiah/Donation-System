@@ -1,225 +1,3 @@
-// import type {
-//   // DefaultValues,
-//   // FieldValues,
-//   Path,
-//   SubmitHandler,
-//   UseFormReturn,
-// } from "react-hook-form";
-// import { useForm } from "react-hook-form";
-// import React, { useCallback } from "react";
-// // import { ZodType } from "zod";
-// // import {DropdownMenu,DropdownMenuItem,DropdownMenuContent,DropdownMenuTrigger} from '../DropdownMenu'
-// import { useNavigate } from "react-router-dom";
-// import { useDonationOptions } from "../../hooks/useDonationOptions";
-// // import { useTimeRangeOptions } from "../../hooks/useTimeRange";
-// // import { useAvailabilityOptions } from "../../hooks/useAvailability";
-// import { DonationFormData } from "../../lib/validation";
-// import {
-//   Form,
-//   FormControl,
-//   FormField,
-//   FormItem,
-//   FormLabel,
-//   FormMessage,
-// } from "../Form";
-// import { Input } from "../Input";
-// import { Button } from "../Button";
-// import { FIELD_NAMES, FIELD_TYPES } from "../../constants";
-// import { zodResolver } from "@hookform/resolvers/zod";
-// import { ZodSchema } from "zod";
-// import AsyncSelect from "react-select/async";
-// import makeAnimated from "react-select/animated";
-
-// interface Props {
-//   schema: ZodSchema;
-//   // schema: ZodTypeAny;
-//   // schema: ZodType<DonationFormData>;
-//   type: "DONATION" | "EDIT_DONATION";
-//   defaultValues: DonationFormData;
-//   onSubmit: (
-//     data: DonationFormData
-//   ) => Promise<{ success: boolean; error?: string }>;
-// }
-
-// interface SelectOption {
-//   value: string;
-//   label: string;
-// }
-
-// function DonationForm({ schema, defaultValues, onSubmit, type }: Props) {
-//   const navigate = useNavigate();
-//   const form: UseFormReturn<DonationFormData> = useForm<DonationFormData>({
-//     resolver: zodResolver(schema),
-//     // defaultValues: defaultValues as DefaultValues<DonationFormData>,
-//     defaultValues,
-//   });
-
-//   const { foodTypes, loading } = useDonationOptions();
-//   const animatedComponents = makeAnimated();
-//   // const filterFoodTypes = useCallback((inputValue: string) => {
-//   //    if (!inputValue) {
-//   //      return foodTypes.map(type => ({ value: type, label: type }));
-//   //     }
-
-//   // return foodTypes.filter(type => type.toLowerCase().includes(inputValue.toLowerCase()))
-//   //                    .map(type => ({ value: type, label: type }));
-//   //                }, [foodTypes]); //
-
-//   // const loadOptions = useCallback((inputValue: string) =>
-//   //                  new Promise<SelectOption[]>(resolve => {
-//   //                      resolve(filterFoodTypes(inputValue));
-//   //                  }),
-//   //                [filterFoodTypes]);
-
-//   const filterFoodTypes = useCallback(
-//     (inputValue: string): SelectOption[] => {
-//       if (!foodTypes || foodTypes.length === 0) {
-//         return []; // Return empty array if no options loaded yet
-//       }
-//       const filtered = foodTypes.filter((type) =>
-//         type.toLowerCase().includes(inputValue.toLowerCase())
-//       );
-//       return filtered.map((type) => ({ value: type, label: type }));
-//     },
-//     [foodTypes]
-//   );
-
-//   const loadOptions = useCallback(
-//     (inputValue: string) =>
-//       new Promise<SelectOption[]>((resolve) => {
-//         resolve(filterFoodTypes(inputValue));
-//       }),
-//     [filterFoodTypes]
-//   );
-
-//   const handleSubmit: SubmitHandler<DonationFormData> = async (data) => {
-//     console.log("FORM DATA", data);
-//     const result = await onSubmit(data);
-//     if (result.success) {
-//       navigate("/home");
-//     } else {
-//       console.error(result.error);
-//     }
-//   };
-
-//   const donationFormFields = [
-//     "food_type",
-//     "quantity",
-//     "expiry_date",
-//     "food_description",
-//   ] as const;
-
-//   const donationFieldTypes = donationFormFields.reduce((acc, field) => {
-//     acc[field] = FIELD_TYPES[field];
-//     return acc;
-//   }, {} as Record<(typeof donationFormFields)[number], string>);
-
-//   const donationFieldNames = donationFormFields.reduce((acc, field) => {
-//     acc[field] = FIELD_NAMES[field];
-//     return acc;
-//   }, {} as Record<(typeof donationFormFields)[number], string>);
-
-//   return (
-//     <div className="flex flex-col gap-4">
-//       <h1 className="text-2xl font-semibold text-white">DonationForm</h1>
-//       <Form {...form}>
-//         <form
-//           onSubmit={form.handleSubmit(handleSubmit)}
-//           className="w-full space-y-6"
-//         >
-//           {donationFormFields.map((fieldName) => (
-//             <FormField
-//               key={fieldName}
-//               control={form.control}
-//               name={fieldName as Path<DonationFormData>}
-//               render={({ field }) => (
-//                 <FormItem>
-//                   {/* {fieldName !== "food_type" && fieldName !== "time_range" && ( */}
-//                   {fieldName !== "food_type" && (
-//                     <FormLabel className="capitalize">
-//                       {
-//                         donationFieldNames[
-//                           fieldName as keyof typeof donationFieldNames
-//                         ]
-//                       }
-//                     </FormLabel>
-//                   )}
-//                   <FormControl>
-//                     {fieldName === "food_type" ? (
-//                       <AsyncSelect
-//                         cacheOptions
-//                         defaultOptions
-//                         isLoading={loading}
-//                         isClearable
-//                         components={animatedComponents}
-//                         loadOptions={loadOptions}
-//                         // value={field.value ? { value: field.value, label: field.value } : null}
-//                         value={
-//                           field.value
-//                             ? {
-//                                 value: field.value as string,
-//                                 label: field.value as string,
-//                               }
-//                             : null
-//                         }
-//                         onChange={(selectedOption: SelectOption | null) => {
-//                           field.onChange(
-//                             selectedOption ? selectedOption.value : ""
-//                           );
-//                         }}
-//                         onBlur={field.onBlur}
-//                         placeholder="Type to search food types..."
-//                         noOptionsMessage={() => "No matching food types"}
-//                         loadingMessage={() => "Loading food types..."}
-//                         className="react-select-container" // For overall container styling
-//                         classNamePrefix="react-select" // For styling internal components
-//                       />
-//                     ) : fieldName === "food_description" ? (
-//                       <textarea
-//                         {...field}
-//                         value={
-//                           typeof field.value === "string" ? field.value : ""
-//                         }
-//                         rows={4}
-//                         className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-//                         placeholder="Enter a brief description of the food..."
-//                       />
-//                     ) : (
-//                       <Input
-//                         required
-//                         // value={field.value ?? ""}
-//                         value={
-//                           typeof field.value === "object"
-//                             ? ""
-//                             : field.value ?? ""
-//                         }
-//                         name={field.name}
-//                         type={donationFieldTypes[fieldName]}
-//                         // {...field}
-//                         className="form-input"
-//                         onChange={field.onChange}
-//                         // onBlur={field.onBlur}
-//                         // ref={field.ref}
-//                       />
-//                     )}
-//                   </FormControl>
-
-//                   <FormMessage />
-//                 </FormItem>
-//               )}
-//             />
-//           ))}
-
-//           <Button type="submit" className="form-btn">
-//             {/* Donate */}
-//             {type === "EDIT_DONATION" ? "Update Donation" : "Donate"}
-//           </Button>
-//         </form>
-//       </Form>
-//     </div>
-//   );
-// }
-// export default DonationForm;
 import { useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -319,13 +97,6 @@ function DonationForm({
   ] as const;
 
   return (
-    // <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center p-4">
-    //   <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6">
-    //     <div className="mb-6">
-    //       <h1 className="text-2xl font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-green-500">
-    //         {type === "EDIT_DONATION" ? "Edit Donation" : "New Donation"}
-    //       </h1>
-    //     </div>
     <div
       className={
         isModal
@@ -398,12 +169,22 @@ function DonationForm({
                           ].toLowerCase()}...`}
                         />
                       ) : (
+
                         <Input
                           {...field}
                           type={FIELD_TYPES[fieldName]}
-                          value={field.value as string | number}
+                          // value={field.value as string | number}
+                          value={
+                            fieldName === "expiry_date" && field.value instanceof Date
+                              ? field.value.toISOString().split("T")[0] // format as string "YYYY-MM-DD"
+                              : field.value as string | number
+                          }
+                          onChange={(e) => {
+                            field.onChange(e.target.value); // let z.coerce.date() do the conversion
+                          }}
                           className="w-full"
                         />
+
                       )}
                     </FormControl>
 

@@ -1,11 +1,14 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from .models import Donor,Recipient,DonationMatch,Donation,Availability
+from .models import Donor,Recipient,DonationMatch,Donation,Availability,RecipientNeedLog
 from .matching import get_matching_models
 from phonenumber_field.serializerfields import PhoneNumberField
 from django.contrib.auth import get_user_model
 from .utils import re_evaluate_matches_for_donation 
 import logging 
+from django.utils import timezone
+from datetime import timedelta
+
 logger = logging.getLogger(__name__)
 User = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
@@ -311,6 +314,12 @@ class RecipientSerializer(serializers.ModelSerializer):
             None
 
 
+class RecipientNeedUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RecipientNeedLog
+        fields = ['food_type', 'quantity','created_at']
+
+
 class TopUserSerializer(serializers.Serializer):
     name = serializers.CharField()
     total_quantity_kg = serializers.FloatField()
@@ -371,31 +380,6 @@ class DonationHistorySerializer(serializers.ModelSerializer):
             return obj.recipient.user == request.user
         return False #
 
-
-# class DonationMatchDashboardSerializer(serializers.ModelSerializer):
-#     donor_name = serializers.CharField(source="donor.user.name", read_only=True)
-#     recipient_name = serializers.CharField(source='recipient.user.name', read_only=True) # Will be 
-#     class Meta:
-#         model = DonationMatch
-#         fields = [
-#             'id',
-#             'donor_name',
-#             'recipient_name', 
-#             'food_type',
-#             'matched_quantity',
-#             'food_description',
-#             'expiry_date', 
-#             'created_at',
-#             'is_claimed', 
-#             'donation',
-#         ]
-
-
-# class FeedbackSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Feedback
-#         fields = ['id', 'match', 'submitted_by', 'submitted_for', 'rating', 'comments', 'created_at']
-#         read_only_fields = ['submitted_by', 'submitted_for', 'created_at']
 
 class ProfileSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True) # Expose user ID
@@ -471,7 +455,7 @@ class ProfileSerializer(serializers.Serializer):
                 # Update existing donor profile
                 donor_serializer = DonorSerializer(user.donor_profile, data=donor_data, partial=True)
                 donor_serializer.is_valid(raise_exception=True)
-                donor_serializer.save() # No need to pass user again if profile exists and is related
+                donor_serializer.save() 
             elif user.is_donor: # Only create if user is a donor and profile doesn't exist
                 # Create new donor profile
                 donor_serializer = DonorSerializer(data={**donor_data, 'user': user.id})
@@ -483,13 +467,31 @@ class ProfileSerializer(serializers.Serializer):
 
         # Handle recipient profile updates
         recipient_data = validated_data.get('recipient_profile')
-        if recipient_data is not None: # Check if recipient_profile data was sent
+        if recipient_data is not None: 
             if hasattr(user, 'recipient_profile') and user.recipient_profile:
                 # Update existing recipient profile
-                recipient_serializer = RecipientSerializer(user.recipient_profile, data=recipient_data, partial=True)
+                recipient = user.recipient_profile
+                recent_log = recipient.need_logs.order_by('-created_at').first()
+                # ensuring need update not bypassed when update profile
+                if recent_log and (timezone.now() - recent_log.created_at < timedelta(days=30)):
+                 raise serializers.ValidationError("You can only update your food needs once every 30 days.")
+
+                # recipient_serializer = RecipientSerializer(user.recipient_profile, data=recipient_data, partial=True)
+                recipient_serializer = RecipientSerializer(recipient, data=recipient_data, partial=True)
                 recipient_serializer.is_valid(raise_exception=True)
-                recipient_serializer.save() # No need to pass user again
-            elif user.is_recipient: # Only create if user is a recipient and profile doesn't exist
+                recipient_serializer.save()
+
+                try:
+                    RecipientNeedLog.objects.create(
+                    recipient=recipient,
+                    food_type=recipient.required_food_type,
+                    quantity=recipient.required_quantity,
+                    # urgency=recipient.urgency
+                )
+
+                except Exception as e:
+                  logger.warning(f"Could not log recipient need: {str(e)}")
+            elif user.is_recipient: 
                 # Create new recipient profile
                 recipient_serializer = RecipientSerializer(data={**recipient_data, 'user': user.id})
                 recipient_serializer.is_valid(raise_exception=True)
@@ -499,6 +501,20 @@ class ProfileSerializer(serializers.Serializer):
 
 
         return user # Return the updated user instance
+    
+
+
+
+
+
+# class FeedbackSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Feedback
+#         fields = ['id', 'match', 'submitted_by', 'submitted_for', 'rating', 'comments', 'created_at']
+#         read_only_fields = ['submitted_by', 'submitted_for', 'created_at']
+
+
+
 
         # if user.is_donor:
         #     donor_data = validated_data.get('donor_profile')

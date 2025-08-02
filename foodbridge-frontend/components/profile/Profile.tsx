@@ -337,9 +337,8 @@ const Profile: React.FC = () => {
                 </h3>
                 <div className="space-y-3">
                   <Link
-                    to={
-                      role === "donor" ? "/create-donation" : "/find-donations"
-                    }
+                    // to="/view-more"
+                    to={role === 'donor' ? '/donate' : '/view-more'}
                     className="block w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-green-500 text-white text-center rounded-lg hover:from-blue-600 hover:to-green-600 transition-colors"
                   >
                     {role === "donor"
