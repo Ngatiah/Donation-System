@@ -814,6 +814,7 @@ interface TopUser {
 
 interface Profile {
   role: string;
+  email : string;
   donor_name: string;
   recipient_name: string;
   required_food_type?: string;
@@ -899,6 +900,7 @@ const Dashboard: React.FC = ({}) => {
       // Extract the actual profile object from the response
       const userProfile: Profile = {
         role: responseData.profile.role,
+        email : responseData.profile.email,
         donor_name: responseData.profile.donor_name,
         recipient_name: responseData.profile.recipient_name,
         required_food_type: responseData.profile.required_food_type,
@@ -1199,7 +1201,7 @@ const Dashboard: React.FC = ({}) => {
   return (
     <div className="flex-1 w-full min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-6 overflow-x-hidden">
       {/* Top Navigation */}
-      <header className="bg-white rounded-xl shadow-md p-4 mb-4 md:mb-6 flex flex-col md:flex-row md:justify-between md:items-center">
+      <header className=" p-4 mb-4 md:mb-6 flex flex-col md:flex-row md:justify-between md:items-center">
         <div className="mb-3 md:mb-0">
           <h1 className="text-xl md:text-2xl font-bold text-gray-800">
             Welcome back,{" "}
@@ -1229,17 +1231,35 @@ const Dashboard: React.FC = ({}) => {
           )}
 
           <DropdownMenu.Root>
-            <DropdownMenu.Trigger>
+           <DropdownMenu.Trigger>
               <div className="flex items-center space-x-2 cursor-pointer hover:bg-gray-100 rounded-full p-1 transition-colors">
                 <CustomAvatar />
-                <span className="hidden md:inline font-medium text-gray-700">
+{/* //                  <span className="hidden md:inline font-medium text-gray-700">
+//                   {role === "recipient"
+                    ? profile.recipient_name
+                    : profile.donor_name}
+                </span>  */}
+              <DropdownMenu.TriggerIcon/>
+              </div>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content className="min-w-[180px] bg-white rounded-md shadow-lg z-50 border border-gray-200">
+              <DropdownMenu.Item
+                className="px-1 my-2 text-gray-700 hover:bg-blue-50 cursor-pointer "
+              >
+                <CustomAvatar />
+              <div className="flex flex-col gap-1">
+               <span className="hidden md:inline font-semibold text-gray-700 text-xl">
                   {role === "recipient"
                     ? profile.recipient_name
                     : profile.donor_name}
                 </span>
+                 <span className="hidden md:inline font-medium text-gray-700 text-sm">
+                    {profile.email}
+                </span>
               </div>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content className="min-w-[180px] bg-white rounded-md shadow-lg z-50 border border-gray-200">
+
+              </DropdownMenu.Item>
+              <DropdownMenu.Separator className="border-t border-gray-200 my-1" />
               <DropdownMenu.Item
                 onClick={() => navigate("/view-profile")}
                 className="px-4 py-2 text-gray-700 hover:bg-blue-50 cursor-pointer"

@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link,useLocation } from "react-router-dom";
 import {
   Home,
   User,
@@ -20,6 +20,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onToggle }) => {
+  const location = useLocation()
   return (
     <>
       {/* Mobile Hamburger Button */}
@@ -57,24 +58,32 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onToggle }) => {
               icon={<Home className="h-5 w-5" />}
               label="Dashboard"
               onClick={onClose}
+              activePath={location.pathname}
+
             />
             <NavItem
               to="/view-more"
               icon={<Box className="h-5 w-5" />}
               label="Donations"
               onClick={onClose}
+              activePath={location.pathname}
+
             />
             <NavItem
               to="/donations-history"
               icon={<Clock className="h-5 w-5" />}
               label="History"
               onClick={onClose}
+              activePath={location.pathname}
+
             />
             <NavItem
               to="/view-profile"
               icon={<User className="h-5 w-5" />}
               label="Profile"
               onClick={onClose}
+              activePath={location.pathname}
+
             />
           </nav>
 
@@ -85,6 +94,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onToggle }) => {
             icon={<LogOut className="h-5 w-5" />}
             label="Logout"
             onClick={onClose}
+            activePath={location.pathname}
+
           />
         </div>
         {/* </div> */}
@@ -98,17 +109,27 @@ const NavItem: React.FC<{
   icon: React.ReactNode;
   label: string;
   onClick: () => void;
-}> = ({ to, icon, label, onClick }) => {
+  activePath: string;
+}> = ({ to, icon, label, onClick, activePath }) => {
+  const isActive = activePath === to;
+
   return (
     <Link
       to={to}
-      className="flex items-center p-3 rounded-lg hover:bg-blue-400 hover:bg-opacity-30 transition-colors group"
       onClick={onClick}
+      className={`flex items-center p-3 rounded-lg transition-colors group
+        ${isActive ? "bg-blue-500 text-white" : "hover:bg-blue-400 hover:bg-opacity-30"}
+      `}
     >
-      <span className="text-blue-600 group-hover:text-white">{icon}</span>
-      <span className="ml-3 font-medium group-hover:text-white">{label}</span>
+      <span className={`${isActive ? "text-white" : "text-blue-600"} group-hover:text-white`}>
+        {icon}
+      </span>
+      <span className={`ml-3 font-medium ${isActive ? "text-white" : "text-blue-600"} group-hover:text-white`}>
+        {label}
+      </span>
     </Link>
   );
 };
+
 
 export default Sidebar;
