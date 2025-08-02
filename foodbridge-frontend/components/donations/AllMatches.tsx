@@ -224,7 +224,7 @@ const AllMatches: React.FC<RecipientMatchesProps> = ({
           {unclaimedMatches.map((match) => (
             <div
               key={match.id}
-              className="bg-white rounded-md shadow-lg text-left p-4 w-80 h-auto"
+              className="bg-white rounded-md shadow-lg text-left p-4 w-auto h-auto"
             >
               <div className="">
                 <div className="overflow-hidden rounded-lg mb-2">

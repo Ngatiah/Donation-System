@@ -52,7 +52,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onToggle }) => {
           </div>  */}
           <Logo />
           {/* Navigation */}
-          <nav className="flex-1 space-y-2">
+          <nav className="flex-1 space-y-2 py-4">
             <NavItem
               to="/home"
               icon={<Home className="h-5 w-5" />}
@@ -124,7 +124,7 @@ const NavItem: React.FC<{
       <span className={`${isActive ? "text-white" : "text-blue-600"} group-hover:text-white`}>
         {icon}
       </span>
-      <span className={`ml-3 font-medium ${isActive ? "text-white" : "text-blue-600"} group-hover:text-white`}>
+      <span className={`ml-3 font-medium ${isActive ? "text-white" : "text-black-600"} group-hover:text-white`}>
         {label}
       </span>
     </Link>

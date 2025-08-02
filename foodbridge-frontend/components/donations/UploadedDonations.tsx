@@ -204,21 +204,26 @@ const UploadedDonations: React.FC<UploadedDonationsProps> = ({
     <div className="px-2 sm:px-4 py-4">
       {donations.length > 0 ? (
         <div
-          className={`grid grid-cols-1 ${
-            columns >= 2 ? "sm:grid-cols-2" : ""
-          } ${columns >= 3 ? "lg:grid-cols-3" : ""} gap-3`}
+          // className={`
+          //   grid grid-cols-1 
+          // ${
+          //   columns >= 2 ? "sm:grid-cols-2" : ""
+          // } 
+          // ${columns >= 3 ? "lg:grid-cols-3" : ""} 
+          // gap-3`}
+           className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2`}
         >
           {visibleDonations.map((donation) => (
             <div
               key={donation.id}
               // className="text-left w-fit h-auto mx-3 px-2"
-                className="rounded-lg overflow-hidden text-left h-auto w-full md:w-auto px-2"
+                className="text-left p-2 w-full h-auto bg-white rounded-md shadow-lg"
             >
-              <div className="relative h-40 overflow-hidden rounded-lg mb-2">
+              <div className="relative overflow-hidden h-40">
                 <img
                   src="/images/download (1).jpeg"
                   alt="donated-img"
-                  className="absolute h-full w-full object-cover"
+                  className="h-full w-full object-cover absolute"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-blue-500/20 to-green-600/10"></div>
               </div>
@@ -256,7 +261,7 @@ const UploadedDonations: React.FC<UploadedDonationsProps> = ({
                     View Details
                   </button>
                   </div>
-                  <div className="flex space-x-3 px-3">
+                  {/* <div className="flex space-x-3 px-3">
                     <button
                       onClick={() => handleEditClick(donation)}
                       disabled={isSubmitting}
@@ -271,7 +276,7 @@ const UploadedDonations: React.FC<UploadedDonationsProps> = ({
                     >
                       Delete
                     </button>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             </div>
