@@ -51,6 +51,8 @@ const ViewMore: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   // const [activeTab, setActiveTab] = useState<'unclaimed_donations' | 'unclaimed_matches' >('unclaimed_matches');
   const token = useAuthStore((state) => state.token);
+  const [currentPage, setCurrentPage] = useState(1);
+  // const itemsPerPage = 6;
 
   const fetchViewMoreData = async () => {
     try {
@@ -216,6 +218,14 @@ const ViewMore: React.FC = () => {
   const undeletedDonations = donations.filter(
     (donation) => !donation.is_deleted
   );
+
+  const itemsPerPage = 6;
+  const totalDonationPages = Math.ceil(undeletedDonations.length / itemsPerPage)
+  const totalMatchPages = Math.ceil(recipientUnclaimedMatches.length / itemsPerPage)
+  const paginatedDonations = undeletedDonations.slice((currentPage - 1) * itemsPerPage,currentPage * itemsPerPage)
+  const paginatedMatches = recipientUnclaimedMatches.slice((currentPage - 1) * itemsPerPage,currentPage * itemsPerPage)
+
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
@@ -244,19 +254,97 @@ const ViewMore: React.FC = () => {
            </Link>
             </div>
            
+          
            <UploadedDonations
-             donations={undeletedDonations}
+            //  donations={undeletedDonations}
+            // donations={donations}
+            donations={paginatedDonations}
              onDonationDeleted={handleDonationDeleted}
              onDonationUpdated={handleDonationUpdated}
              auth={{ token: token }}
            />
+
+                    {totalDonationPages > 1 && (
+                    <div className="flex justify-center mt-6 space-x-2">
+                      <button
+                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+                      >
+                        Previous
+                      </button>
+
+                      {Array.from({ length: totalDonationPages }, (_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setCurrentPage(i + 1)}
+                          className={`px-3 py-1 rounded ${
+                            currentPage === i + 1
+                              ? "bg-blue-500 text-white"
+                              : "bg-gray-100 hover:bg-gray-200"
+                          }`}
+                        >
+                          {i + 1}
+                        </button>
+                      ))}
+
+                      <button
+                        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalDonationPages))}
+                        disabled={currentPage === totalDonationPages}
+                        className="px-3 py-1 rounded bg-blue-200 text-white disabled:opacity-50"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  )}
+
+            
             </>
           ) : (
+            <>
             <AllMatches
               profile={profile}
-              initialMatches={recipientUnclaimedMatches}
+              // initialMatches={recipientUnclaimedMatches}
+              initialMatches={paginatedMatches}
               onClaimSuccess={handleClaimSuccess}
             />
+
+             {totalMatchPages > 1 && (
+                    <div className="flex justify-center mt-6 space-x-2">
+                      <button
+                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+                      >
+                        Previous
+                      </button>
+
+                      {Array.from({ length: totalMatchPages }, (_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setCurrentPage(i + 1)}
+                          className={`px-3 py-1 rounded ${
+                            currentPage === i + 1
+                              ? "bg-blue-500 text-white"
+                              : "bg-gray-100 hover:bg-gray-200"
+                          }`}
+                        >
+                          {i + 1}
+                        </button>
+                      ))}
+
+                      <button
+                        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalMatchPages))}
+                        disabled={currentPage === totalMatchPages}
+                        className="px-3 py-1 rounded bg-blue-200 text-white disabled:opacity-50"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  )}
+            
+          
+                  </>
           )}
         </div>
 

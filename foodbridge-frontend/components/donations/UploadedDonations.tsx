@@ -47,8 +47,8 @@ const UploadedDonations: React.FC<UploadedDonationsProps> = ({
   const [donationToDeleteId, setDonationToDeleteId] = useState<number | null>(
     null
   );
-  const [maxVisibleItems] = useState(3);
-  const visibleDonations = donations.slice(0, maxVisibleItems);
+  // const [maxVisibleItems] = useState(3);
+  // const visibleDonations = donations.slice(0, maxVisibleItems);
 
   // --- Core function to handle API calls for GET, PUT, PATCH, DELETE ---
   const handleDonationAction = async (
@@ -160,22 +160,22 @@ const UploadedDonations: React.FC<UploadedDonationsProps> = ({
   const [viewingDonation, setViewingDonation] = useState<Donation | null>(null);
 
   // Calculate how many donations can fit based on container width
-  useEffect(() => {
-    const updateVisibleCount = () => {
-      const container = document.getElementById("donations-container");
-      if (!container) return;
+  // useEffect(() => {
+  //   const updateVisibleCount = () => {
+  //     const container = document.getElementById("donations-container");
+  //     if (!container) return;
 
-      const containerWidth = container.clientWidth;
-      const cardWidth = 288; // Approximate width of each card (including margins)
-      const maxVisible = Math.floor(containerWidth / cardWidth);
+  //     const containerWidth = container.clientWidth;
+  //     const cardWidth = 288; // Approximate width of each card (including margins)
+  //     const maxVisible = Math.floor(containerWidth / cardWidth);
 
-      setVisibleDonationsCount(Math.max(1, maxVisible)); // Always show at least 1
-    };
+  //     setVisibleDonationsCount(Math.max(1, maxVisible)); // Always show at least 1
+  //   };
 
-    updateVisibleCount();
-    window.addEventListener("resize", updateVisibleCount);
-    return () => window.removeEventListener("resize", updateVisibleCount);
-  }, []);
+  //   updateVisibleCount();
+  //   window.addEventListener("resize", updateVisibleCount);
+  //   return () => window.removeEventListener("resize", updateVisibleCount);
+  // }, []);
 
   
 
@@ -200,6 +200,7 @@ const UploadedDonations: React.FC<UploadedDonationsProps> = ({
     return () => window.removeEventListener("resize", updateColumns);
   }, []);
 
+
   return (
     <div className="px-2 sm:px-4 py-4">
       {donations.length > 0 ? (
@@ -213,7 +214,7 @@ const UploadedDonations: React.FC<UploadedDonationsProps> = ({
           // gap-3`}
            className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2`}
         >
-          {visibleDonations.map((donation) => (
+          {donations.map((donation) => (
             <div
               key={donation.id}
               // className="text-left w-fit h-auto mx-3 px-2"
@@ -226,7 +227,7 @@ const UploadedDonations: React.FC<UploadedDonationsProps> = ({
                   className="h-full w-full object-cover absolute"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-blue-500/20 to-green-600/10"></div>
-              </div>
+               </div>
 
               <div className="p-4 flex flex-col flex-grow">
                 <div className="flex-grow">

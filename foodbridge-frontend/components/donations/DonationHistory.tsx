@@ -22,6 +22,8 @@ const DonationHistory: React.FC = () => {
   const [history, setHistory] = useState<DonationHistoryItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -69,6 +71,10 @@ const DonationHistory: React.FC = () => {
 //    hist.recipient_name && hist.donor_name && hist.is_claimed && hist.is_donation_deleted && hist.is_missed
 //  )
 
+  
+  const totalPages = Math.ceil(history.length / itemsPerPage)
+  const paginatedDonationsHistory = history.slice((currentPage - 1) * itemsPerPage,currentPage * itemsPerPage)
+
   return (
     <div className="p-4">
       <h2 className="text-3xl/10 font-bold mb-6 text-center">Donation History</h2>
@@ -77,7 +83,7 @@ const DonationHistory: React.FC = () => {
     {/* No donations yet. You’ll see your contributions here once you get started! */}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {history.map((item: DonationHistoryItem) => (
+        {paginatedDonationsHistory.map((item: DonationHistoryItem) => (
           <div key={item.id} className="bg-white p-6 rounded-2xl shadow-lg text-left border border-gray-100 transform hover:scale-105 transition-transform duration-200 ease-in-out">
             <h3 className="font-bold text-xl text-indigo-700 mb-2">{item.food_type}</h3>
 
@@ -138,7 +144,7 @@ const DonationHistory: React.FC = () => {
                   // item.is_missed ? 'Missed' : 'Go claim this donation'} */}
                 {item.is_current_user_the_donor ? (
                   // Logic for DONOR's view
-                  item.is_claimed ? 'Claimed' :
+                   item.is_claimed ? 'Claimed' :
                   item.is_donation_deleted ? 'Unavailable  - Removed by You' :
                   item.is_missed ? 'Missed' : 
                   'Waiting for Recipient to Claim'
@@ -153,11 +159,44 @@ const DonationHistory: React.FC = () => {
             </p>
            
 
-
-
           </div>
         ))}
       </div>
+      <>
+             {totalPages > 1 && (
+                    <div className="flex justify-center mt-6 space-x-2">
+                      <button
+                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+                      >
+                        Previous
+                      </button>
+
+                      {Array.from({ length: totalPages }, (_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setCurrentPage(i + 1)}
+                          className={`px-3 py-1 rounded ${
+                            currentPage === i + 1
+                              ? "bg-blue-500 text-white"
+                              : "bg-gray-100 hover:bg-gray-200"
+                          }`}
+                        >
+                          {i + 1}
+                        </button>
+                      ))}
+
+                      <button
+                        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-1 rounded bg-blue-200 text-white disabled:opacity-50"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  )}
+                  </>
     </div>
   );
 };

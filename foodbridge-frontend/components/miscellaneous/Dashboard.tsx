@@ -17,6 +17,7 @@ import ThemeSwitcher from "../../src/ThemeSwitcher";
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 interface TopUser {
+  id:number;
   name: string;
   total_quantity_kg: number;
 }
@@ -501,7 +502,7 @@ const Dashboard: React.FC = ({}) => {
               New Donation
             </button>
           </Link>
-        </div>
+         </div>
       )}
 
       {/* Main Content */}
@@ -547,9 +548,9 @@ const Dashboard: React.FC = ({}) => {
           </h2>
           {topUsers.length > 0 ? (
             <ul className="space-y-3">
-              {topUsers.slice(0, 5).map((user, index) => (
+              {topUsers.slice(0, 5).map((user, id) => (
                 <li
-                  key={index}
+                  key={id}
                   className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer"
                   // onClick={() => {
                   //   /* Add click handler if needed */
@@ -557,10 +558,10 @@ const Dashboard: React.FC = ({}) => {
                 >
                   <div className="flex items-center gap-3">
                       <div className="relative">
-                        <CustomAvatar />
-                        <span className="absolute -bottom-1 -right-1 bg-blue-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                        <CustomAvatar userId={id}/>
+                        {/* <span className="absolute -bottom-1 -right-1 bg-blue-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                           {index + 1}
-                        </span>
+                        </span> */}
                       </div>
                       <span className="font-medium text-gray-700 truncate max-w-[120px] md:max-w-[180px] leading-tight">
                         {user.name}

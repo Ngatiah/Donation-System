@@ -15,6 +15,7 @@ urlpatterns = [
     path('donation-options/', DonationOptions.as_view(), name='donation-options'),
     path('donation-history/', DonationsHistory.as_view(), name='donation-history'),
     path('view-profile/', UserProfile.as_view(), name='view-profile'),
+    path('view-profile/<int:user_id>/', view_user_profile,name='view-other-user-profile'),
     path('edit-profile/', EditProfile.as_view(), name='edit-profile'),
     path('switch-role/', switch_role, name='switch-role'),
     path('availabilities/', AvailabilityListAPIView.as_view(), name='availability-list'),

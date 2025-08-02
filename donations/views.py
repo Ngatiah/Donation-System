@@ -387,6 +387,34 @@ class UserProfile(generics.RetrieveAPIView):
         return self.request.user
     
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def view_user_profile(request, user_id=None):
+    try:
+        user = User.objects.get(id=user_id)
+        serializer = ProfileSerializer(user)
+        return Response(serializer.data)
+    except User.DoesNotExist:
+        return Response({"detail": "User not found."}, status=404)
+
+    
+# access other user profile in logged-in user profile for top users
+# @api_view(['GET'])
+# @permission_classes([IsAuthenticated])
+# def view_user_profile(request, user_id=None):
+#     try:
+#         user = User.objects.get(id=user_id) if user_id else request.user
+#         serializer = ProfileSerializer(user)
+#         return Response(serializer.data)
+#     except User.DoesNotExist:
+#         return Response({"detail": "User not found."}, status=404)
+
+
+# def view_user_profile(request, user_id=None):
+#     user = request.user if user_id is None else get_object_or_404(User, id=user_id)
+#     serializer = ProfileSerializer(user)
+#     return Response(serializer.data)
+
 class EditProfile(generics.RetrieveUpdateAPIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]

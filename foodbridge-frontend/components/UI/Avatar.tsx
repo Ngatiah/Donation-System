@@ -4,17 +4,38 @@ import { getInitials } from '../lib/util'
 import { useAuthStore } from '../../store/authStore'
 
 interface User{
-   role:string;
-    name:string;
-}
-interface ProfileData {
-  donor_profile:string;
-  recipient_profile:string;
-  user:User
-  
+  id : number;
+  role:string;
+  name:string;
+  email:string;
 }
 
-const CustomAvatar : React.FC = ()=> {
+interface DonorProfile {
+  
+  donor_name: string;
+}
+
+interface RecipientProfile {
+  recipient_name: string;
+}
+
+interface ProfileData {
+  donor_profile?: DonorProfile| null ;
+  recipient_profile?:  RecipientProfile| null;
+  user:User;
+  id:number;
+  name?: string;
+  role?: string;
+  email: string;
+
+}
+
+interface UserAvatarProps {
+  userId?: number; // optional: if not passed, fetch current user
+}
+
+
+const CustomAvatar : React.FC<UserAvatarProps> = ({userId})=> {
     const [profile, setProfile] = useState<ProfileData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -23,7 +44,8 @@ const CustomAvatar : React.FC = ()=> {
     useEffect(() => {
         const fetchProfile = async () => {
           try {
-            const res = await fetch("http://localhost:8003/FoodBridge/donations/view-profile/", {
+            const endpoint = userId ? `http://localhost:8003/FoodBridge/donations/view-profile/${userId}/` : `http://localhost:8003/FoodBridge/donations/view-profile/`
+            const res = await fetch(endpoint, {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",
@@ -47,14 +69,14 @@ const CustomAvatar : React.FC = ()=> {
         };
     
         fetchProfile();
-      }, [token]);
+      }, [token,userId]);
 
       if (loading) return <div>Loading profile...</div>;
       if (error) return <div>Error: {error}</div>;
       if (!profile) return null;
       const { user} = profile;
       // const {name,role} = user
-      const profileName = user.name
+      const profileName = user?.name
   
   return (
   <Flex gap="2">

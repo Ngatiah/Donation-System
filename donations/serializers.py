@@ -321,8 +321,10 @@ class RecipientNeedUpdateSerializer(serializers.ModelSerializer):
 
 
 class TopUserSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)  #expose user id
     name = serializers.CharField()
     total_quantity_kg = serializers.FloatField()
+
     
 
 class DonationHistorySerializer(serializers.ModelSerializer):
