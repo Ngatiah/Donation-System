@@ -309,7 +309,7 @@ const Dashboard: React.FC = ({}) => {
       !match.is_claimed &&
       !match.is_missed &&
       !match.is_donation_deleted
-  );
+  ).slice(0,3);
 
   //  max of 3 on dashboard
   const visibleDonations = donations
@@ -551,10 +551,10 @@ const Dashboard: React.FC = ({}) => {
               {topUsers.slice(0, 5).map((user, id) => (
                 <li
                   key={id}
-                  className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer"
+                  className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer border border-gray-300"
                   // onClick={() => {
                   //   /* Add click handler if needed */
-                  // }}
+                  // }} 
                 >
                   <div className="flex items-center gap-3">
                       <div className="relative">
