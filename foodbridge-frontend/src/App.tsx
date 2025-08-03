@@ -13,6 +13,7 @@ import DonationHistory from "../components/donations/DonationHistory";
 import ViewMore from "../components/donations/ViewMore";
 import ForgotPassword from "../components/auth/ForgotPassword";
 import EditDonation from "../components/donations/EditDonation";
+import Logo from "../components/miscellaneous/Logo";
 // import NeedUpdateForm from '../components/UI/forms/NeedUpdateForm'
 
 
@@ -26,15 +27,26 @@ const App: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-b from-blue-50 to-green-50 flex overflow-auto">
-      {!isAuth && (
-        <Sidebar
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-        />
+    <>
+    <div className="min-h-screen w-full bg-gradient-to-b from-blue-50 to-green-50 flex">
+
+       {!isAuth && (
+        <div className="hidden md:flex flex-col w-64 bg-stone-50 shadow-lg h-screen">
+          <div className="p-6">
+            <Logo />
+          </div>
+          <div className="flex-1 overflow-y-auto">
+          <Sidebar
+            isOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+            onToggle={() => setSidebarOpen(!sidebarOpen)}
+          /> 
+          </div>
+        </div>
       )}
 
-      <main className="flex-1 w-full min-h-screen overflow-hidden">
+
+      <main className="flex-1  min-h-screen overflow-hidden">
         <Routes>
           {/* auth */}
           <Route path="/" element={<Navigate to="/login" />} />
@@ -61,6 +73,7 @@ const App: React.FC = () => {
         </Routes>
       </main>
     </div>
+    </>
   );
 };
 

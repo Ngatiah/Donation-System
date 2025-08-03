@@ -23,6 +23,7 @@ interface DonationMatch {
   created_at: string;
   is_claimed: boolean;
   is_donation_deleted?: boolean;
+  image_url?:string;
 }
 
 interface RecipientMatchesProps {
@@ -171,6 +172,13 @@ const AllMatches: React.FC<RecipientMatchesProps> = ({
 
   // Filter out claimed donations
   const unclaimedMatches = matches.filter((match) => !match.is_claimed);
+  const getImageUrl = (imagePath?: string) => imagePath || "/images/download (1).jpeg";
+  // const getImageUrl = (imagePath?: string) => 
+  // imagePath 
+  //   ? (imagePath.startsWith('/') ? `${window.location.origin}${imagePath}` : imagePath)
+  //   : "/images/download (1).jpeg";
+
+
 
   return (
     <div className="space-y-4">
@@ -229,8 +237,8 @@ const AllMatches: React.FC<RecipientMatchesProps> = ({
               <div className="">
                 <div className="overflow-hidden rounded-lg mb-2">
                   <img
-                    src="/images/download (1).jpeg" 
-                    alt={match.food_type}
+                    src={getImageUrl(match.image_url)}
+                    alt={`${match.food_type} image`}
                     className="w-full h-full object-cover"
                   />
                 </div>

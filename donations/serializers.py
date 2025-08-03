@@ -7,6 +7,8 @@ from django.contrib.auth import get_user_model
 from .utils import re_evaluate_matches_for_donation 
 import logging 
 from django.utils import timezone
+import requests
+from django.core.files.base import ContentFile
 from datetime import timedelta
 
 logger = logging.getLogger(__name__)
@@ -198,13 +200,26 @@ class LoginSerializer(serializers.Serializer):
 class DonationSerializer(serializers.ModelSerializer):
     donor_name = serializers.SerializerMethodField(read_only=True)
     food_description = serializers.CharField(required=False,allow_blank=True)
+    image_url = serializers.URLField(required=False, allow_blank=True)
+
+    # image_url = serializers.CharField(required=False, allow_blank=True)
+    # image = serializers.ImageField(required=False, allow_null=True)
+
     # donor_contact_phone = serializers.SerializerMethodField(read_only=True)
     # availability = AvailabilitySerializer(many=True,required=False)
+    
     class Meta: 
         model = Donation
         # fields = ['id','food_type','food_description', 'quantity','expiry_date','donor_name','status']
-        fields = ['id','food_type','food_description', 'quantity','expiry_date','donor_name','is_claimed']
+        # fields = ['id','food_type','food_description', 'quantity','expiry_date','donor_name','is_claimed','image_url','image']
+        fields = ['id','food_type','food_description', 'quantity','expiry_date','donor_name','is_claimed','image_url']
 
+    def validate(self, data):
+        if not data.get("image_url"):
+            raise serializers.ValidationError("Please select an image.")
+        return data
+    
+    
     def get_donor_name(self, obj):
         return obj.donor.user.name
 
@@ -228,26 +243,34 @@ class DonationSerializer(serializers.ModelSerializer):
         original_quantity = instance.quantity
         original_expiry_date = instance.expiry_date
         original_food_description = instance.food_description
+        original_image_url= instance.image_url if instance.image_url else None
 
         # Update specific fields
         instance.food_type = validated_data.get('food_type', instance.food_type)
         instance.quantity = validated_data.get('quantity', instance.quantity)
         instance.expiry_date = validated_data.get('expiry_date', instance.expiry_date)
+        instance.image_url = validated_data.get('image_url', instance.image_url)
+
 
         # Handle food_description if present in validated_data
         if 'food_description' in validated_data:
             instance.food_description = validated_data['food_description'] # Use validated_data directly
-
+       
         instance.save()
         logger.info(f"Donation ID {instance.id} saved after update.")
 
         # --- CRITICAL ADDITION: Trigger match re-evaluation ---
         # This will be called whenever a donation is updated.
         # Only call re_evaluate if match-relevant fields changed (optimization)
-        if (original_food_type != instance.food_type or
+        if (
+            original_food_type != instance.food_type or
             original_quantity != instance.quantity or
             original_expiry_date != instance.expiry_date or
-            original_food_description != instance.food_description):
+            original_food_description != instance.food_description or
+            original_image_url != (instance.image_url if instance.image_url else None)
+            # original_image_url != instance.image_url
+
+            ):
             try:
                 re_evaluate_matches_for_donation(instance)
                 logger.info(f"Triggered match re-evaluation for Donation ID: {instance.id} due to relevant changes.")
@@ -334,6 +357,8 @@ class DonationHistorySerializer(serializers.ModelSerializer):
     # recipient_role = serializers.CharField(source="recipient.user.role",read_only=True)
     donor_contact_phone = serializers.CharField(source="donor.contact_phone", read_only=True)
     recipient_contact_phone = serializers.CharField(source="recipient.contact_phone", read_only=True)
+    image_url = serializers.URLField(source='donation.image_url', read_only=True)
+
 
     # donor_user = serializers.CharField(source="donor.user",read_only=True)
     # recipient_user = serializers.CharField(source="recipient.user",read_only=True)
@@ -366,7 +391,8 @@ class DonationHistorySerializer(serializers.ModelSerializer):
             'is_missed',
             'is_current_user_the_donor',     
             'is_current_user_the_recipient', 
-            'is_donation_deleted'
+            'is_donation_deleted',
+            'image_url',
         ]
 
     def get_is_current_user_the_donor(self, obj):
@@ -505,36 +531,11 @@ class ProfileSerializer(serializers.Serializer):
         return user # Return the updated user instance
     
 
+# image = serializers.ImageField(required=False, allow_null=True)
+    # image_url = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    # image_url = serializers.CharField(write_only=True, required=False)
+    # image_url = serializers.CharField(write_only=True, required=False)
+    # image = serializers.ImageField(required=False, allow_null=True)
 
 
-
-
-# class FeedbackSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Feedback
-#         fields = ['id', 'match', 'submitted_by', 'submitted_for', 'rating', 'comments', 'created_at']
-#         read_only_fields = ['submitted_by', 'submitted_for', 'created_at']
-
-
-
-
-        # if user.is_donor:
-        #     donor_data = validated_data.get('donor_profile')
-        #     if hasattr(user, 'donor_profile'):
-        #         donor_serializer = DonorSerializer(user.donor_profile, data=donor_data, partial=True)
-        #     else:
-        #         donor_serializer = DonorSerializer(data={**donor_data, "user": user.id})
-        #     donor_serializer.is_valid(raise_exception=True)
-        #     donor_serializer.save(user=user)
-
-        # elif user.is_recipient:
-        #     recipient_data = validated_data.get('recipient_profile')
-        #     if hasattr(user, 'recipient_profile'):
-        #         recipient_serializer = RecipientSerializer(user.recipient_profile, data=recipient_data, partial=True)
-        #     else:
-        #         recipient_serializer = RecipientSerializer(data={**recipient_data, "user": user.id})
-        #     recipient_serializer.is_valid(raise_exception=True)
-        #     recipient_serializer.save(user=user)
-
-        # return user
-
+      

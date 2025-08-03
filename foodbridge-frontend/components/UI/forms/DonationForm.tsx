@@ -1,11 +1,11 @@
-import { useCallback } from "react";
+import { useCallback ,useState} from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import AsyncSelect from "react-select/async";
 import makeAnimated from "react-select/animated";
-import { ZodSchema } from "zod";
+import { string, ZodSchema } from "zod";
 import {
   Form,
   FormControl,
@@ -20,10 +20,28 @@ import { useDonationOptions } from "../../hooks/useDonationOptions";
 import { type DonationFormData } from "../../lib/validation";
 import { FIELD_NAMES, FIELD_TYPES } from "../../constants";
 
+
+const defaultDonationImages = [
+  "/images/assets/beverages-3105631_640.jpg",
+  "/images/assets/corn-984635_640.jpg",
+  "/images/assets/crayfish-472815_640.jpg",
+  "/images/assets/istockphoto-155373465-612x612.jpg",
+  "/images/assets/istockphoto-185024956-1024x1024.jpg",
+  "/images/assets/istockphoto-637856490-612x612.jpg",
+  "/images/assets/istockphoto-1194287257-612x612.jpg",
+  "/images/assets/meat-1769188_640.jpg",
+  "/images/assets/rice-3506194_640.jpg", 
+  // "/images/download (1).jpeg", 
+ 
+];
+
+
+
 interface SelectOption {
   value: string;
   label: string;
 }
+
 
 interface Props {
   schema: ZodSchema;
@@ -52,6 +70,8 @@ function DonationForm({
 
   const { foodTypes, loading } = useDonationOptions();
   const animatedComponents = makeAnimated();
+  const [selectedDefaultImage, setSelectedDefaultImage] = useState<string | null>(null);
+
 
   const filterFoodTypes = useCallback(
     (inputValue: string): SelectOption[] => {
@@ -72,8 +92,40 @@ function DonationForm({
   );
 
   const handleSubmit = async (data: DonationFormData) => {
+
+    // const formData = new FormData();
+    // formData.append("food_type", data.food_type);
+    // formData.append("quantity", String(data.quantity));
+    // formData.append("expiry_date", data.expiry_date.toISOString().split("T")[0]);
+    // formData.append("food_description", data.food_description);
+    // formData.append("image_url", data.image);
+
+    // const imageToSend = data.image.startsWith('/')
+    // ? `${window.location.origin}${data.image}`
+    // : data.image;
+    // formData.append("image_url",imageToSend);
+
+    //file uploads i.e image upload
+    // if (data.image instanceof File) { 
+    //   formData.append("image", data.image);
+    //   // default image strings/urls
+    // } else if (typeof data.image === "string") {
+    //   formData.append("image_url", data.image); 
+    // }
+    
+    // if (typeof data.image === "string") {
+    //   formData.append("image_url", data.image); 
+    // }
+    // console.log(formData);
+
     try {
-      const result = await onSubmit(data);
+      // const result = await onSubmit(data);
+      const result = await onSubmit({
+        ...data,
+        image: data.image ?? "",
+      });
+
+      console.log(result)
       if (result.success) {
         toast.success(
           type === "EDIT_DONATION"
@@ -83,6 +135,7 @@ function DonationForm({
         navigate("/home");
       } else if (result.error) {
         toast.error(result.error);
+        console.error(result.error)
       }
     } catch (error) {
       toast.error("An unexpected error occurred");
@@ -94,6 +147,7 @@ function DonationForm({
     "quantity",
     "expiry_date",
     "food_description",
+    "image"
   ] as const;
 
   return (
@@ -168,24 +222,43 @@ function DonationForm({
                             fieldName
                           ].toLowerCase()}...`}
                         />
-                      ) : (
-
-                        <Input
-                          {...field}
-                          type={FIELD_TYPES[fieldName]}
-                          // value={field.value as string | number}
-                          value={
-                            fieldName === "expiry_date" && field.value instanceof Date
-                              ? field.value.toISOString().split("T")[0] // format as string "YYYY-MM-DD"
-                              : field.value as string | number
-                          }
-                          onChange={(e) => {
-                            field.onChange(e.target.value); // let z.coerce.date() do the conversion
-                          }}
-                          className="w-full"
-                        />
-
-                      )}
+                      )  : fieldName === "image" ? (
+                                <div className="mt-2">
+                                  <p className="text-sm text-gray-600 mb-1">Select a default image:</p>
+                                  <div className="flex gap-2 flex-wrap">
+                                    {defaultDonationImages.map((src, idx) => (
+                                      <img
+                                        key={idx}
+                                        src={src}
+                                        alt={`Default ${src}`}
+                                        className={`w-20 h-20 rounded object-cover cursor-pointer border-2 ${
+                                          selectedDefaultImage === src ? "border-blue-500" : "border-transparent"
+                                        }`}
+                                        onClick={() => {
+                                          setSelectedDefaultImage(src);
+                                          field.onChange(src); // set the selected image URL
+                                        }}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              ) : (
+                                <Input
+                                  {...field}
+                                  type={FIELD_TYPES[fieldName]}
+                                  // value={field.value as string | number}
+                                  value={
+                                    fieldName === "expiry_date" && field.value instanceof Date
+                                      ? field.value.toISOString().split("T")[0] // format as string "YYYY-MM-DD"
+                                      : field.value as string | number
+                                  }
+                                  onChange={(e) => {
+                                    field.onChange(e.target.value); // let z.coerce.date() do the conversion
+                                  }}
+                                  className="w-full"
+                                />
+                              )
+                      }
                     </FormControl>
 
                     <FormMessage className="text-red-500 text-xs mt-1" />

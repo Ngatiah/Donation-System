@@ -73,9 +73,9 @@ const NotificationBell: React.FC = () => {
 
         // Show the toast and capture its ID if you need to dismiss it manually later
         const toastId = toastFn(notif.message, {
-          duration: 15000, // Toast disappears after 15 seconds automatically
+          duration: 8000, // Toast disappears after 15 seconds automatically
           onClick: () => {
-            console.log("Notification toast clicked:", notif.data);
+            // console.log("Notification toast clicked:", notif.data);
             navigate('/donations-history');
             // dismiss the specific toast instance when it's clicked
             toast.dismiss(toastId); 

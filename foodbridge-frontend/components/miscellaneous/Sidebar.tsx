@@ -11,7 +11,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import Logo from "../miscellaneous/Logo";
+// import Logo from "../miscellaneous/Logo";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -50,7 +50,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onToggle }) => {
               <span className="text-green-300">Bridge</span>
             </h2>
           </div>  */}
-          <Logo />
+          {/* <Logo /> */}
           {/* Navigation */}
           <nav className="flex-1 space-y-2 py-4">
             <NavItem

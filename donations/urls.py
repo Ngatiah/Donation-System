@@ -1,8 +1,9 @@
 # urls.py
 from django.urls import path
 from .views import *
-# ,GenerateDonationReportView
-# ,VerifyEmailView
+# from django.conf import settings
+# from django.conf.urls.static import static
+
 
 urlpatterns = [
     path('', Dashboard.as_view(), name='home'),
@@ -41,4 +42,6 @@ urlpatterns = [
     # generate donation report
     # path('generate-report/', GenerateDonationReportView.as_view(), name='donation-report'),
 
-]
+] 
+# + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+# + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

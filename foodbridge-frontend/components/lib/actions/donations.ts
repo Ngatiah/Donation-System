@@ -1,12 +1,15 @@
-export async function postDonations(data: any, token: string | null) {
+export async function postDonations(data: FormData, token: string | null) {
     try {
       const res = await fetch("http://localhost:8003/FoodBridge/donations/create-donations/", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          // comment out json if handling multimedia so that browser sets the proper multipart/form-data boundary on its own.
+          // "Content-Type": "application/json",
           Authorization: `Token ${token}`,
         },
-        body: JSON.stringify(data),
+        // body: JSON.stringify(data),
+        body: data,
+
       });
   
       const resData = await res.json();

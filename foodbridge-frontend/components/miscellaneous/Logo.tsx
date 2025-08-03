@@ -43,12 +43,14 @@ const Logo: React.FC<LogoProps> = ({ size = "md" }) => {
   };
 
   return (
+    <header className="rounded-xl p-4 mb-4 md:mb-6">
     <h1 className={`font-bold ${sizeClasses[size]}`}>
       {/* <span className="mr-2">🌱</span> or use a custom icon */}
       <span className="bg-gradient-to-r from-blue-600 to-green-500 bg-clip-text text-transparent py-4">
         FoodBridge
       </span>
     </h1>
+    </header>
   );
 };
 

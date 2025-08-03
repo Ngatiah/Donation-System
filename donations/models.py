@@ -80,10 +80,16 @@ class Donation(models.Model):
     availability = models.ManyToManyField('Availability', blank=True, related_name='donation_availabilities')
     is_claimed = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
+    # file(image,e.t.c) uploads
+    # image = models.ImageField(upload_to='donation_images/', null=True, blank=True) 
+    # default image string url
+    # image_url = models.CharField(max_length=500, null=True, blank=True)
+    image_url = models.URLField(blank=True, null=True)
 
     def __str__(self):
         return f"Donation of {self.food_type} ({self.quantity}) by {self.donor.user.name}"
-     
+    
+
     # class Meta:
     #     ordering = ['-created_at']
 

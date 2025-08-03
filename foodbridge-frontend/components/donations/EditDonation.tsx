@@ -48,24 +48,59 @@ const EditDonation: React.FC<EditDonationProps> = ({
   };
 
   // The onSubmit for DonationForm will trigger the onSubmit prop of EditDonation
-  const handleFormSubmit = async (formData: DonationFormData) => {
-    const cleanData: DonationApiPayload = {
+  // const handleFormSubmit = async (formData: DonationFormData) => {
+  //   const cleanData: DonationApiPayload = {
+  //     ...formData,
+  //     // Format expiry_date back to string for the API
+  //     expiry_date: formData.expiry_date.toISOString().split("T")[0],
+  
+  //   };
+
+  //   // Call the onSubmit prop passed from the parent (UploadedDonations)
+  //   const result = await onSubmit(cleanData);
+  //   // The parent will handle closing the modal if successful
+  //   return result;
+  // };
+    const handleFormSubmit = async (formData: DonationFormData) => {
+    const cleanData: DonationApiPayload & { image_url?: string } = {
       ...formData,
-      // Format expiry_date back to string for the API
       expiry_date: formData.expiry_date.toISOString().split("T")[0],
     };
 
-    // Call the onSubmit prop passed from the parent (UploadedDonations)
+    if (typeof formData.image === "string") {
+      cleanData.image_url = formData.image.startsWith("/")
+        ? `${window.location.origin}${formData.image}`
+        : formData.image;
+    }
+
     const result = await onSubmit(cleanData);
-    // The parent will handle closing the modal if successful
     return result;
   };
 
 
+  //   const handleFormSubmit = async (formData: DonationFormData) => {
+  //   const formDataToSend = new FormData();
+
+  //   formDataToSend.append("food_type", formData.food_type);
+  //   formDataToSend.append("quantity", String(formData.quantity));
+  //   formDataToSend.append("expiry_date", formData.expiry_date.toISOString().split("T")[0]);
+  //   formDataToSend.append("food_description", formData.food_description || "");
+
+  //   if (typeof formData.image === "string") {
+  //     const imageUrl = formData.image.startsWith("/")
+  //       ? `${window.location.origin}${formData.image}`
+  //       : formData.image;
+  //     formDataToSend.append("image_url", imageUrl);
+  //   }
+
+  //   const result = await onSubmit(formDataToSend); 
+  //   return result;
+  // };
+
     const handleCancel = () => {
     onClose();
     navigate(redirectPath);
-  };
+    };
 
 
   return (

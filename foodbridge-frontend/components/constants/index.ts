@@ -11,6 +11,7 @@ export const FIELD_TYPES = {
     role : "radio",
     food_description: "text", 
     city: "text", 
+    image:"file"
     // time_range: "text", 
 
 };
@@ -28,6 +29,7 @@ export const FIELD_NAMES = {
     role : "Role",
     city: "City", 
     food_description: "Food Description",
+    image : "Food Image"
     // time_range: "Preferred Time Slot",
 
 };

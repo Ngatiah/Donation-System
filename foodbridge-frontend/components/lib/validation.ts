@@ -83,6 +83,12 @@ export const donationSchema = z.object({
   z.number().min(0, "Quantity must be a positive number")
 ),
   expiry_date: z.coerce.date(),
+  image: z.string().min(1, { message: "Please select a valid image" }),
+  // image: z.union([
+  //   z.instanceof(File),
+  //   z.string().url({ message: "Please select a valid image" }),
+  // ]),
+  // image: z.string().url({ message: "Please select a valid image" }),
 
 });
 
@@ -97,6 +103,26 @@ export type DonationFormData = z.infer<typeof donationSchema>;
 // export type RecipientNeedsData = z.infer<typeof recipientNeedsSchema>;
 
 
+ // string URL or file uploads
+  // image: z.union([z.instanceof(File), z.string()]).optional(),
+  // default image url/string
+  // image: z
+  // .string()
+  // .url({ message: "Invalid image URL" })
+  // .min(1, { message: "Please select an image" }),
+  // image: z.string().url({ message: "Please select a valid image" }),
+  // image: z
+  //   .string()
+  //   .refine(
+  //     (val) =>
+  //       /^https?:\/\/.+/.test(val) || val.startsWith("/media/"),
+  //     { message: "Please select a valid image" }
+  //   ),
+  // image: z.string().nonempty({ message: "Please select a valid image" }),
+  //  image: z.union([
+  //   z.instanceof(File),
+  //   z.string().url({ message: "Please select a valid image" }),
+  // ]),
 
 export const editProfileSchema = z.object({
   name: z.string().min(3, "Name is required"),

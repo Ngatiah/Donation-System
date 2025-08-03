@@ -5,6 +5,7 @@ from .serializers import UserSerializer,RegisterSerializer,LoginSerializer,Donat
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.parsers import MultiPartParser,FormParser,JSONParser
 from django.db import transaction
 # from reportlab.pdfgen import canvas
 from django.http import HttpResponse
@@ -430,6 +431,11 @@ class CreateOrListDonation(generics.ListCreateAPIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = DonationSerializer
+    # for uploading images/media
+    parser_classes = [MultiPartParser,FormParser]
+    # for selecting
+    # parser_classes = [JSONParser]
+
     def get(self, request):
         donations = Donation.objects.filter(donor__user=request.user)
         serializer = DonationSerializer(donations, many=True)
@@ -453,6 +459,7 @@ class RetrieveUpdateDestroyDonation(generics.RetrieveUpdateDestroyAPIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = DonationSerializer
+    parser_classes = [JSONParser,MultiPartParser]
 
     def get_queryset(self):
         # Only allow donors to see/delete their own donations

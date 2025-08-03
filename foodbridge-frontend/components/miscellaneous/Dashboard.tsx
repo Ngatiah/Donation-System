@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import CustomAvatar from "../UI/Avatar";
-import {  Plus, Settings  } from "lucide-react";
+import {  Plus } from "lucide-react";
 // import ThemeSwitcher from "../../src/ThemeSwitcher";
 // import toast from "react-hot-toast";
 import { Link, useNavigate } from "react-router-dom";
@@ -55,6 +55,7 @@ interface Donation {
   donor_name: string;
   is_claimed: boolean;
   is_deleted: boolean;
+  image_url?:string;
 }
 
 interface DashboardStatistics {
@@ -413,7 +414,8 @@ const Dashboard: React.FC = ({}) => {
   return (
     <div className="flex-1 w-full min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-6 overflow-x-hidden">
       {/* Top Navigation */}
-      <header className="rounded-xl  p-4 mb-4 md:mb-6 flex flex-col md:flex-row md:justify-between md:items-center">
+      <header className="rounded-xl p-4 mb-4 md:mb-6 flex flex-col md:flex-row md:justify-between md:items-center">
+      {/* <header className="rounded-xl p-4 mb-4 md:mb-6 flex flex-col md:flex-row md:justify-between md:items-center md:ml-64"> */}
         <div className="mb-3 md:mb-0">
           <h1 className="text-xl md:text-2xl font-bold text-gray-800">
             Welcome back,{" "}
@@ -548,9 +550,9 @@ const Dashboard: React.FC = ({}) => {
           </h2>
           {topUsers.length > 0 ? (
             <ul className="space-y-3">
-              {topUsers.slice(0, 5).map((user, id) => (
+              {topUsers.slice(0, 5).map((user, index) => (
                 <li
-                  key={id}
+                  key={index}
                   className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer border border-gray-300"
                   // onClick={() => {
                   //   /* Add click handler if needed */
@@ -558,7 +560,8 @@ const Dashboard: React.FC = ({}) => {
                 >
                   <div className="flex items-center gap-3">
                       <div className="relative">
-                        <CustomAvatar userId={id}/>
+                        {/* <CustomAvatar userId={index}/> */}
+                        <CustomAvatar/>
                         {/* <span className="absolute -bottom-1 -right-1 bg-blue-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                           {index + 1}
                         </span> */}

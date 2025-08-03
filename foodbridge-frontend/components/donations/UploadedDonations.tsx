@@ -18,6 +18,8 @@ interface Donation {
   is_claimed: boolean;
   is_deleted: boolean;
   donor_name: string;
+  // image?:string;
+  image_url?:string;
 }
 
 interface UploadedDonationsProps {
@@ -154,6 +156,7 @@ const UploadedDonations: React.FC<UploadedDonationsProps> = ({
       quantity: donation.quantity,
       expiry_date: new Date(donation.expiry_date), // Keep as string for input default value
       food_description: donation.food_description || "", // Ensure it's a string for input
+      image : donation.image_url || ''
     });
     setIsEditModalOpen(true);
   };
@@ -200,6 +203,20 @@ const UploadedDonations: React.FC<UploadedDonationsProps> = ({
     return () => window.removeEventListener("resize", updateColumns);
   }, []);
 
+  // const getImageUrl = (imagePath?: string) => {
+  // if (!imagePath) return "/images/download (1).jpeg";
+  // // return imagePath.startsWith("http")
+  // //   ? imagePath
+  // //   : `http://localhost:8003${imagePath}`;
+  // return imagePath;
+  //  };
+
+   const getImageUrl = (imagePath?: string) => imagePath || "/images/download (1).jpeg";
+  // const getImageUrl = (imagePath?: string) => 
+  // imagePath 
+  //   ? (imagePath.startsWith('/') ? `${window.location.origin}${imagePath}` : imagePath)
+  //   : "/images/download (1).jpeg";
+
 
   return (
     <div className="px-2 sm:px-4 py-4">
@@ -222,12 +239,14 @@ const UploadedDonations: React.FC<UploadedDonationsProps> = ({
             >
               <div className="relative overflow-hidden h-40">
                 <img
-                  src="/images/download (1).jpeg"
-                  alt="donated-img"
+                  // src="/images/download (1).jpeg"
+                  src={getImageUrl(donation.image_url)}
+                  // alt=
+                  alt={`${donation.food_type} image`}
                   className="h-full w-full object-cover absolute"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-blue-500/20 to-green-600/10"></div>
-               </div>
+               </div> 
 
               <div className="p-4 flex flex-col flex-grow">
                 <div className="flex-grow">
@@ -338,8 +357,10 @@ const UploadedDonations: React.FC<UploadedDonationsProps> = ({
             <div className="p-4">
               <div className="mb-4">
                 <img
-                  src="/images/download (1).jpeg"
-                  alt="donated-img"
+                  // src="/images/download (1).jpeg"
+                  src={getImageUrl(viewingDonation.image_url)}
+                  // alt="donated-img"
+                  alt={`${viewingDonation.food_type} image`}
                   className="w-full h-48 object-cover rounded-lg"
                 />
               </div>
