@@ -256,6 +256,7 @@ class DonationSerializer(serializers.ModelSerializer):
         if 'food_description' in validated_data:
             instance.food_description = validated_data['food_description'] # Use validated_data directly
        
+        
         instance.save()
         logger.info(f"Donation ID {instance.id} saved after update.")
 

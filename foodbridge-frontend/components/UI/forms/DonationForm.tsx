@@ -76,12 +76,14 @@ function DonationForm({
   const filterFoodTypes = useCallback(
     (inputValue: string): SelectOption[] => {
       if (!foodTypes || foodTypes.length === 0) return [];
+
       return foodTypes
         .filter((type) => type.toLowerCase().includes(inputValue.toLowerCase()))
         .map((type) => ({ value: type, label: type }));
     },
     [foodTypes]
   );
+
 
   const loadOptions = useCallback(
     (inputValue: string) =>
@@ -192,7 +194,11 @@ function DonationForm({
                       {fieldName === "food_type" ? (
                         <AsyncSelect
                           cacheOptions
-                          defaultOptions
+                          // defaultOptions
+                          defaultOptions={foodTypes.map((type) => ({
+                          label: type,
+                          value: type,
+                        }))}
                           isLoading={loading}
                           isClearable
                           components={animatedComponents}

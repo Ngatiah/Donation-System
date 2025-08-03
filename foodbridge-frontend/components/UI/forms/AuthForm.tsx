@@ -255,7 +255,11 @@ function AuthForm<T extends FieldValues>({
                                     components={animatedComponents}
                                     isClearable
                                     cacheOptions
-                                    defaultOptions
+                                    // defaultOptions
+                                    defaultOptions={allCities.map((type) => ({
+                                      label: type,
+                                      value: type,
+                                    }))}
                                     isLoading={loadingCities}
                                     loadOptions={loadCityOptions}
                                     value={
