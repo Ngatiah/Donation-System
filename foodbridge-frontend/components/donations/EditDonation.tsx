@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate,useLocation} from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import DonationForm from "../UI/forms/DonationForm";
 import { donationSchema, type DonationFormData } from "../lib/validation";
 
@@ -24,11 +24,12 @@ const EditDonation: React.FC<EditDonationProps> = ({
   onSubmit,
   onClose,
 }) => {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const allowedPaths = ['/home', '/view-more'];
-  const redirectPath = allowedPaths.includes(location.state?.from) ? location.state.from : '/view-more';
-
+  const navigate = useNavigate();
+  const location = useLocation();
+  const allowedPaths = ["/home", "/view-more"];
+  const redirectPath = allowedPaths.includes(location.state?.from)
+    ? location.state.from
+    : "/view-more";
 
   // The defaultValues for DonationForm should be pre-processed here
   // to ensure expiry_date is a Date object and quantity is a number.
@@ -53,7 +54,7 @@ const EditDonation: React.FC<EditDonationProps> = ({
   //     ...formData,
   //     // Format expiry_date back to string for the API
   //     expiry_date: formData.expiry_date.toISOString().split("T")[0],
-  
+
   //   };
 
   //   // Call the onSubmit prop passed from the parent (UploadedDonations)
@@ -61,7 +62,7 @@ const EditDonation: React.FC<EditDonationProps> = ({
   //   // The parent will handle closing the modal if successful
   //   return result;
   // };
-    const handleFormSubmit = async (formData: DonationFormData) => {
+  const handleFormSubmit = async (formData: DonationFormData) => {
     const cleanData: DonationApiPayload & { image_url?: string } = {
       ...formData,
       expiry_date: formData.expiry_date.toISOString().split("T")[0],
@@ -76,7 +77,6 @@ const EditDonation: React.FC<EditDonationProps> = ({
     const result = await onSubmit(cleanData);
     return result;
   };
-
 
   //   const handleFormSubmit = async (formData: DonationFormData) => {
   //   const formDataToSend = new FormData();
@@ -93,36 +93,27 @@ const EditDonation: React.FC<EditDonationProps> = ({
   //     formDataToSend.append("image_url", imageUrl);
   //   }
 
-  //   const result = await onSubmit(formDataToSend); 
+  //   const result = await onSubmit(formDataToSend);
   //   return result;
   // };
 
-    const handleCancel = () => {
+  const handleCancel = () => {
     onClose();
     navigate(redirectPath);
-    };
-
+  };
 
   return (
-    <div>
-      <DonationForm
-        type="EDIT_DONATION"
-        schema={donationSchema}
-        defaultValues={preProcessedInitialValues} // Pass the pre-processed values
-        onSubmit={handleFormSubmit}
-      />
-      <button
-        type="button"
-        // onClick={onClose}
-        // onClick={()=>{
-        //   onClose()
-        //   navigate(redirectPath)
-        // }}
-        onClick={handleCancel}
-        className="mt-4 w-full px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition"
-      >
-        Cancel
-      </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-white/100">
+      <div className="w-full max-w-4xl mx-auto p-2 md:p-6">
+        <DonationForm
+          type="EDIT_DONATION"
+          schema={donationSchema}
+          defaultValues={preProcessedInitialValues} // Pass the pre-processed values
+          onSubmit={handleFormSubmit}
+          isModal={true}
+          onCancel={handleCancel}
+        />
+      </div>
     </div>
   );
 };
