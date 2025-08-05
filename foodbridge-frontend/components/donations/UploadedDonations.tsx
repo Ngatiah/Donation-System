@@ -19,7 +19,7 @@ interface Donation {
   is_deleted: boolean;
   donor_name: string;
   // image?:string;
-  image_url?:string;
+  image_url?: string;
 }
 
 interface UploadedDonationsProps {
@@ -156,7 +156,7 @@ const UploadedDonations: React.FC<UploadedDonationsProps> = ({
       quantity: donation.quantity,
       expiry_date: new Date(donation.expiry_date), // Keep as string for input default value
       food_description: donation.food_description || "", // Ensure it's a string for input
-      image : donation.image_url || ''
+      image: donation.image_url || "",
     });
     setIsEditModalOpen(true);
   };
@@ -179,8 +179,6 @@ const UploadedDonations: React.FC<UploadedDonationsProps> = ({
   //   window.addEventListener("resize", updateVisibleCount);
   //   return () => window.removeEventListener("resize", updateVisibleCount);
   // }, []);
-
-  
 
   // ensures no background loading
   useEffect(() => {
@@ -211,77 +209,76 @@ const UploadedDonations: React.FC<UploadedDonationsProps> = ({
   // return imagePath;
   //  };
 
-   const getImageUrl = (imagePath?: string) => imagePath || "/images/download (1).jpeg";
-  // const getImageUrl = (imagePath?: string) => 
-  // imagePath 
+  const getImageUrl = (imagePath?: string) =>
+    imagePath || "/images/download (1).jpeg";
+  // const getImageUrl = (imagePath?: string) =>
+  // imagePath
   //   ? (imagePath.startsWith('/') ? `${window.location.origin}${imagePath}` : imagePath)
   //   : "/images/download (1).jpeg";
 
-
   return (
     <div className="px-2 sm:px-4 py-4">
-      {donations.length > 0 ? (
-        <div
-          // className={`
-          //   grid grid-cols-1 
-          // ${
-          //   columns >= 2 ? "sm:grid-cols-2" : ""
-          // } 
-          // ${columns >= 3 ? "lg:grid-cols-3" : ""} 
-          // gap-3`}
-           className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2`}
-        >
-          {donations.map((donation) => (
-            <div
-              key={donation.id}
-              // className="text-left w-fit h-auto mx-3 px-2"
-                className="text-left p-2 w-full h-auto bg-white rounded-md shadow-lg"
-            >
-              <div className="relative overflow-hidden h-40">
-                <img
-                  // src="/images/download (1).jpeg"
-                  src={getImageUrl(donation.image_url)}
-                  // alt=
-                  alt={`${donation.food_type} image`}
-                  className="h-full w-full object-cover absolute"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-blue-500/20 to-green-600/10"></div>
-               </div> 
+      <div
+        // className={`
+        //   grid grid-cols-1
+        // ${
+        //   columns >= 2 ? "sm:grid-cols-2" : ""
+        // }
+        // ${columns >= 3 ? "lg:grid-cols-3" : ""}
+        // gap-3`}
+        className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2`}
+      >
+        {donations.map((donation) => (
+          <div
+            key={donation.id}
+            // className="text-left w-fit h-auto mx-3 px-2"
+            className="text-left p-2 w-full h-auto bg-white rounded-md shadow-lg"
+          >
+            <div className="relative overflow-hidden h-40">
+              <img
+                // src="/images/download (1).jpeg"
+                src={getImageUrl(donation.image_url)}
+                // alt=
+                alt={`${donation.food_type} image`}
+                className="h-full w-full object-cover absolute"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-blue-500/20 to-green-600/10"></div>
+            </div>
 
-              <div className="p-4 flex flex-col flex-grow">
-                <div className="flex-grow">
-                  <h3 className="font-medium text-gray-800 line-clamp-1">
-                    {donation.food_type}
-                  </h3>
+            <div className="p-4 flex flex-col flex-grow">
+              <div className="flex-grow">
+                <h3 className="font-medium text-gray-800 line-clamp-1">
+                  {donation.food_type}
+                </h3>
 
-                  <div className="text-sm text-gray-600 space-y-1 mt-2">
-                    <p>
-                      <span className="font-medium">Quantity:</span>{" "}
-                      {donation.quantity} kg
-                    </p>
-                    <p>
-                      <span className="font-medium">Expires on:</span>{" "}
-                      {new Date(donation.expiry_date).toLocaleDateString()}
-                    </p>
-                  </div>
+                <div className="text-sm text-gray-600 space-y-1 mt-2">
+                  <p>
+                    <span className="font-medium">Quantity:</span>{" "}
+                    {donation.quantity} kg
+                  </p>
+                  <p>
+                    <span className="font-medium">Expires on:</span>{" "}
+                    {new Date(donation.expiry_date).toLocaleDateString()}
+                  </p>
+                </div>
 
-                  {/* {donation.food_description && (
+                {/* {donation.food_description && (
                     <p className="text-sm text-gray-500 mt-2 line-clamp-2">
                       {donation.food_description}
                     </p>
                   )} */}
-                </div>
+              </div>
 
-                <div className="mt-4 flex justify-between items-center gap-2">
-                    <div className="flex items-center">
+              <div className="mt-4 flex justify-between items-center gap-2">
+                <div className="flex items-center">
                   <button
                     onClick={() => setViewingDonation(donation)}
                     className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors py-1 whitespace-nowrap"
                   >
                     View Details
                   </button>
-                  </div>
-                  {/* <div className="flex space-x-3 px-3">
+                </div>
+                {/* <div className="flex space-x-3 px-3">
                     <button
                       onClick={() => handleEditClick(donation)}
                       disabled={isSubmitting}
@@ -297,37 +294,11 @@ const UploadedDonations: React.FC<UploadedDonationsProps> = ({
                       Delete
                     </button>
                   </div> */}
-                </div>
               </div>
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-8">
-          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-50 to-green-50 rounded-full flex items-center justify-center mb-3">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-8 w-8 text-gray-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
           </div>
-          <h3 className="text-sm font-medium text-gray-700 mb-1">
-            No donations yet
-          </h3>
-          <p className="text-xs text-gray-500 mb-4">
-            You haven't added any donations yet.
-          </p>
-        </div>
-      )}
+        ))}
+      </div>
 
       {/* View Details Modal */}
       {viewingDonation && (
@@ -502,4 +473,3 @@ const UploadedDonations: React.FC<UploadedDonationsProps> = ({
 };
 
 export default UploadedDonations;
-

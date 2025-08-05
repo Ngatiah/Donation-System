@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from 'react-router-dom';
+import { Link } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import UploadedDonations from "./UploadedDonations";
 import AllMatches from "./AllMatches";
@@ -188,7 +188,7 @@ const ViewMore: React.FC = () => {
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
-    ); 
+    );
 
   if (error)
     return (
@@ -220,11 +220,20 @@ const ViewMore: React.FC = () => {
   );
 
   const itemsPerPage = 6;
-  const totalDonationPages = Math.ceil(undeletedDonations.length / itemsPerPage)
-  const totalMatchPages = Math.ceil(recipientUnclaimedMatches.length / itemsPerPage)
-  const paginatedDonations = undeletedDonations.slice((currentPage - 1) * itemsPerPage,currentPage * itemsPerPage)
-  const paginatedMatches = recipientUnclaimedMatches.slice((currentPage - 1) * itemsPerPage,currentPage * itemsPerPage)
-
+  const totalDonationPages = Math.ceil(
+    undeletedDonations.length / itemsPerPage
+  );
+  const totalMatchPages = Math.ceil(
+    recipientUnclaimedMatches.length / itemsPerPage
+  );
+  const paginatedDonations = undeletedDonations.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+  const paginatedMatches = recipientUnclaimedMatches.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-8">
@@ -232,7 +241,7 @@ const ViewMore: React.FC = () => {
         {/* Header Section */}
         <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
-            {role ===  "donor" ? "Your Donations" : "Available Donations"}
+            {role === "donor" ? "Your Donations" : "Available Donations"}
           </h1>
           <p className="text-gray-600">
             {role === "donor"
@@ -245,140 +254,135 @@ const ViewMore: React.FC = () => {
         <div className="overflow-hidden">
           {role === "donor" ? (
             <>
-            <div className="flex justify-end mb-4">
-            <Link to="/donate" className="hidden sm:inline-block">
-             <button className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white px-4 py-2 rounded-lg font-medium flex items-center transition-all shadow-md hover:shadow-lg active:scale-95">
-               <span className="text-sm md:text-base px-4">New Donation</span>
-               <Plus className="mr-1 md:mr-2" size={16} />
-             </button>
-           </Link>
-            </div>
-           
-          
-           <UploadedDonations
-            //  donations={undeletedDonations}
-            // donations={donations}
-            donations={paginatedDonations}
-             onDonationDeleted={handleDonationDeleted}
-             onDonationUpdated={handleDonationUpdated}
-             auth={{ token: token }}
-           />
+              <UploadedDonations
+                //  donations={undeletedDonations}
+                // donations={donations}
+                donations={paginatedDonations}
+                onDonationDeleted={handleDonationDeleted}
+                onDonationUpdated={handleDonationUpdated}
+                auth={{ token: token }}
+              />
 
-                    {totalDonationPages > 1 && (
-                    <div className="flex justify-center mt-6 space-x-2">
-                      <button
-                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
-                        className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
-                      >
-                        Previous
-                      </button>
+              {totalDonationPages > 1 && (
+                <div className="flex justify-center mt-6 space-x-2">
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
+                    disabled={currentPage === 1}
+                    className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+                  >
+                    Previous
+                  </button>
 
-                      {Array.from({ length: totalDonationPages }, (_, i) => (
-                        <button
-                          key={i}
-                          onClick={() => setCurrentPage(i + 1)}
-                          className={`px-3 py-1 rounded ${
-                            currentPage === i + 1
-                              ? "bg-blue-500 text-white"
-                              : "bg-gray-100 hover:bg-gray-200"
-                          }`}
-                        >
-                          {i + 1}
-                        </button>
-                      ))}
+                  {Array.from({ length: totalDonationPages }, (_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCurrentPage(i + 1)}
+                      className={`px-3 py-1 rounded ${
+                        currentPage === i + 1
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-100 hover:bg-gray-200"
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
 
-                      <button
-                        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalDonationPages))}
-                        disabled={currentPage === totalDonationPages}
-                        className="px-3 py-1 rounded bg-blue-200 text-white disabled:opacity-50"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  )}
-
-            
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) =>
+                        Math.min(prev + 1, totalDonationPages)
+                      )
+                    }
+                    disabled={currentPage === totalDonationPages}
+                    className="px-3 py-1 rounded bg-blue-200 text-white disabled:opacity-50"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
             </>
           ) : (
             <>
-            <AllMatches
-              profile={profile}
-              // initialMatches={recipientUnclaimedMatches}
-              initialMatches={paginatedMatches}
-              onClaimSuccess={handleClaimSuccess}
-            />
+              <AllMatches
+                profile={profile}
+                // initialMatches={recipientUnclaimedMatches}
+                initialMatches={paginatedMatches}
+                onClaimSuccess={handleClaimSuccess}
+              />
 
-             {totalMatchPages > 1 && (
-                    <div className="flex justify-center mt-6 space-x-2">
-                      <button
-                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
-                        className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
-                      >
-                        Previous
-                      </button>
+              {totalMatchPages > 1 && (
+                <div className="flex justify-center mt-6 space-x-2">
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
+                    disabled={currentPage === 1}
+                    className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+                  >
+                    Previous
+                  </button>
 
-                      {Array.from({ length: totalMatchPages }, (_, i) => (
-                        <button
-                          key={i}
-                          onClick={() => setCurrentPage(i + 1)}
-                          className={`px-3 py-1 rounded ${
-                            currentPage === i + 1
-                              ? "bg-blue-500 text-white"
-                              : "bg-gray-100 hover:bg-gray-200"
-                          }`}
-                        >
-                          {i + 1}
-                        </button>
-                      ))}
+                  {Array.from({ length: totalMatchPages }, (_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCurrentPage(i + 1)}
+                      className={`px-3 py-1 rounded ${
+                        currentPage === i + 1
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-100 hover:bg-gray-200"
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
 
-                      <button
-                        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalMatchPages))}
-                        disabled={currentPage === totalMatchPages}
-                        className="px-3 py-1 rounded bg-blue-200 text-white disabled:opacity-50"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  )}
-            
-          
-                  </>
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) =>
+                        Math.min(prev + 1, totalMatchPages)
+                      )
+                    }
+                    disabled={currentPage === totalMatchPages}
+                    className="px-3 py-1 rounded bg-blue-200 text-white disabled:opacity-50"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
-
 
         {/* Empty State Handling */}
         {role === "donor" && undeletedDonations.length === 0 && (
           <div className="text-center py-12">
             <div className="mx-auto w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-4">
               <Link to="/donate">
-              <svg
-                className="w-12 h-12 text-blue-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                ></path>
-              </svg>
+                <svg
+                  className="w-12 h-12 text-blue-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                  ></path>
+                </svg>
               </Link>
             </div>
             <h3 className="text-xl font-medium text-gray-800 mb-2">
               No Donations Yet
             </h3>
             <p className="text-gray-600 max-w-md mx-auto">
-                Click the "+" button to start adding your donations.
+              Click the "+" button to start adding your donations.
             </p>
-
           </div>
         )}
-
 
         {/* {role === "recipient" && recipientUnclaimedMatches.length === 0 && (
           <div className="text-center py-12">

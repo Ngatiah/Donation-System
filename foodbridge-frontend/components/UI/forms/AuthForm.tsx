@@ -136,16 +136,14 @@ function AuthForm<T extends FieldValues>({
       });
 
       setApiError(
-      result.error ||
-        `An unexpected error occurred during ${type.toLowerCase()}.`
+        result.error ||
+          `An unexpected error occurred during ${type.toLowerCase()}.`
       );
-
     }
-
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-6">
+    <div className="min-h-screen  bg-gradient-to-b from-blue-50 to-green-50 flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
           <Logo className="h-16 w-auto mb-4" />
