@@ -1,17 +1,15 @@
-
 import React from "react";
-import { Link,useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   Home,
   User,
   Box,
   Clock,
   LogOut,
-  // HeartHandshake,
   Menu,
   X,
 } from "lucide-react";
-// import Logo from "../miscellaneous/Logo";
+// import Logo from "./Logo";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -20,85 +18,67 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onToggle }) => {
-  const location = useLocation()
+  const location = useLocation();
+
   return (
     <>
+      {/* overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-40 z-30 md:hidden"
+          onClick={onClose}
+        />
+      )}
+
       {/* Mobile Hamburger Button */}
+      {/* <button
+        onClick={onToggle}
+        className={`sm:hidden block fixed top-4 left-4 z-50 p-2 rounded-full bg-gradient-to-r from-blue-600 to-green-600 text-white shadow-lg transition-all`}
+      >
+        {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+      </button> */}
       <button
         onClick={onToggle}
-        className={`md:hidden fixed top-4 left-4 z-52 p-2 rounded-full bg-gradient-to-r from-blue-600 to-green-600 text-white shadow-lg transition-all ${
-          isOpen ? "left-64" : "left-4"
-        }`}
+        className="block sm:hidden fixed top-4 left-4 z-50 p-2 rounded-full bg-gradient-to-r from-blue-600 to-green-600 text-white shadow-lg transition-all"
       >
         {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
 
+
+      {/* <button
+        onClick={onToggle}
+        className="block sm:hidden fixed top-4 left-4 z-50 p-2 rounded-full bg-gradient-to-r from-blue-600 to-green-600 text-white shadow-lg transition-all"
+      >
+        {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+      </button> */}
+
       {/* Sidebar */}
       <aside
-        className={`fixed md:relative inset-y-0 left-0 w-64 bg-stone-50 text-blue z-40 transform transition-transform duration-300 ease-in-out shadow-xl ${
-          isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+          className={`fixed md:relative inset-y-0 left-0 md:w-20 w-64 text-blue z-40 transform transition-transform duration-300 ease-in-out shadow-xl ${
+          isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0 flex-1"
         }`}
+         
       >
-        <div className="flex flex-col h-full p-4">
-          {/* Logo with Icon */}
-          {/* <div className="flex items-center mb-8 px-2">
-            <div className="bg-green-400 p-2 rounded-lg mr-3">
-              <HeartHandshake className="h-6 w-6 text-blue-800" />
-            </div>
-            <h2 className="text-2xl font-bold">
-              <span className="text-white">Food</span>
-              <span className="text-green-300">Bridge</span>
-            </h2>
-          </div>  */}
-          {/* <Logo /> */}
-          {/* Navigation */}
+          <div className="flex flex-col h-full p-4">
           <nav className="flex-1 space-y-2 py-4">
-            <NavItem
-              to="/home"
-              icon={<Home className="h-5 w-5" />}
-              label="Dashboard"
-              onClick={onClose}
-              activePath={location.pathname}
-
-            />
-            <NavItem
-              to="/view-more"
-              icon={<Box className="h-5 w-5" />}
-              label="Donations"
-              onClick={onClose}
-              activePath={location.pathname}
-
-            />
-            <NavItem
-              to="/donations-history"
-              icon={<Clock className="h-5 w-5" />}
-              label="History"
-              onClick={onClose}
-              activePath={location.pathname}
-
-            />
-            <NavItem
-              to="/view-profile"
-              icon={<User className="h-5 w-5" />}
-              label="Profile"
-              onClick={onClose}
-              activePath={location.pathname}
-
-            />
+            <NavItem to="/home" icon={<Home />} label="Home" activePath={location.pathname} 
+          
+            onClick={onClose} />
+            <NavItem to="/view-more" icon={<Box />} label="Donations" activePath={location.pathname} 
+          
+            onClick={onClose} />
+            <NavItem to="/donations-history" icon={<Clock />} label="History" activePath={location.pathname} 
+           
+            onClick={onClose} />
+            <NavItem to="/view-profile" icon={<User />} label="Profile" activePath={location.pathname} 
+           
+            onClick={onClose} />
           </nav>
 
-          {/* Logout at the bottom */}
-          {/* <div className="mt-auto pt-4 border-t border-blue-600"> */}
-          <NavItem
-            to="/logout"
-            icon={<LogOut className="h-5 w-5" />}
-            label="Logout"
-            onClick={onClose}
-            activePath={location.pathname}
-
-          />
+          <div className="mt-auto pt-4">
+          <NavItem to="/logout" icon={<LogOut />} activePath={location.pathname} label="Logout" onClick={onClose}/>
+          </div>
         </div>
-        {/* </div> */}
       </aside>
     </>
   );
@@ -110,26 +90,33 @@ const NavItem: React.FC<{
   label: string;
   onClick: () => void;
   activePath: string;
-}> = ({ to, icon, label, onClick, activePath }) => {
+  // collapsed: boolean;
+}> = ({ to, icon, label, onClick, activePath, 
+  // collapsed 
+}) => {
   const isActive = activePath === to;
 
   return (
     <Link
       to={to}
       onClick={onClick}
-      className={`flex items-center p-3 rounded-lg transition-colors group
-        ${isActive ? "bg-blue-500 text-white" : "hover:bg-blue-400 hover:bg-opacity-30"}
-      `}
+      className={`flex items-center gap-3 p-3 rounded-lg transition-all group ${
+        // isActive ? "bg-blue-100 text-blue-800" : "hover:bg-blue-50 text-blue-400"
+        isActive ? "text-blue-800" : "text-blue-400"
+      }`}
     >
-      <span className={`${isActive ? "text-white" : "text-blue-600"} group-hover:text-white`}>
+      <div className={`text-lg ${isActive ? "text-blue-800" : "group-hover:text-blue-600"}`}>
         {icon}
+      </div>
+    
+      <span className={`transition-opacity duration-200 font-medium sr-only md:inline hidden ${isActive ? "text-blue-800" : "text-blue-400"} `}>
+      {/* <span className={`transition-opacity duration-200 font-medium sm:inline hidden md:inline hidden ${isActive ? "text-blue-800" : "text-blue-400"} `}> */}
+          {label}
       </span>
-      <span className={`ml-3 font-medium ${isActive ? "text-white" : "text-black-600"} group-hover:text-white`}>
-        {label}
-      </span>
+     
     </Link>
   );
 };
 
-
 export default Sidebar;
+

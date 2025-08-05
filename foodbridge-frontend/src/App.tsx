@@ -13,7 +13,7 @@ import DonationHistory from "../components/donations/DonationHistory";
 import ViewMore from "../components/donations/ViewMore";
 import ForgotPassword from "../components/auth/ForgotPassword";
 import EditDonation from "../components/donations/EditDonation";
-import Logo from "../components/miscellaneous/Logo";
+// import Logo from "../components/miscellaneous/Logo";
 // import NeedUpdateForm from '../components/UI/forms/NeedUpdateForm'
 
 
@@ -28,20 +28,19 @@ const App: React.FC = () => {
 
   return (
     <>
-    <div className="min-h-screen w-full bg-gradient-to-b from-blue-50 to-green-50 flex">
+    <div className="min-h-screen w-full bg-gradient-to-b from-blue-50 to-green-50 flex rounded-tr-2xl rounded-tl-2xl">
 
        {!isAuth && (
-        <div className="hidden md:flex flex-col w-64 bg-stone-50 shadow-lg h-screen">
-          <div className="p-6">
-            <Logo />
-          </div>
-          <div className="flex-1 overflow-y-auto">
+        <div className="hidden md:flex flex-col w-20 bg-stone-50 border border-gray-200">
+           {/* <div className="overflow-hidden"> 
+            {/* <Logo /> */}
+             
+           {/* </div>  */} 
           <Sidebar
             isOpen={sidebarOpen}
             onClose={() => setSidebarOpen(false)}
             onToggle={() => setSidebarOpen(!sidebarOpen)}
           /> 
-          </div>
         </div>
       )}
 

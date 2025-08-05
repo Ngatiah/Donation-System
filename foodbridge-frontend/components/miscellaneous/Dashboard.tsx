@@ -414,9 +414,10 @@ const Dashboard: React.FC = ({}) => {
   return (
     <div className="flex-1 w-full min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-6 overflow-x-hidden">
       {/* Top Navigation */}
-      <header className="rounded-xl p-4 mb-4 md:mb-6 flex flex-col md:flex-row md:justify-between md:items-center">
+      {/* <header className="rounded-xl p-4 mb-4 md:mb-6 flex flex-col md:flex-row md:justify-between md:items-center"> */}
+      <header className="rounded-xl p-4 mb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center">
       {/* <header className="rounded-xl p-4 mb-4 md:mb-6 flex flex-col md:flex-row md:justify-between md:items-center md:ml-64"> */}
-        <div className="mb-3 md:mb-0">
+        <div className="mb-3 md:mb-0 mb-3 sm:mb-0 sm:max-w-[60%]">
           <h1 className="text-xl md:text-2xl font-bold text-gray-800">
             Welcome back,{" "}
             <span className="text-gradient bg-gradient-to-r from-blue-600 to-green-500 bg-clip-text text-transparent">
@@ -432,7 +433,8 @@ const Dashboard: React.FC = ({}) => {
           </p>
         </div>
 
-        <div className="flex items-center space-x-3 md:space-x-4">
+        {/* <div className="flex items-center space-x-3 md:space-x-4 sm:space-x-3 sm:max-w-[40%]"> */}
+        <div className="flex items-center space-x-3 md:space-x-4 sm:space-x-3">
 
           {role === "donor" && (
             <Link to="/donate" className="hidden sm:inline-block">
@@ -520,7 +522,8 @@ const Dashboard: React.FC = ({}) => {
               to="/view-more"
               className="text-lg text-gradient bg-gradient-to-r from-blue-600 to-green-500 bg-clip-text text-transparent font-bold"
             >
-              See All
+              View More 
+              {/* <span>&gt;</span> */}
             </Link>
           </div>
           

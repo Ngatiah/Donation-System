@@ -42,8 +42,9 @@ export async function signUp({
     if (!res.ok) {
       return { success: false, error: data?.detail || "Signup failed" };
     }
-
+    
     if (data.token) {
+      sessionStorage.setItem('authToken',data.token)
       useAuthStore.getState().setToken(data.token);
     }
 
@@ -85,6 +86,10 @@ export async function signInWithCredentials({
     }if (typeof data.token !== 'string') {
       return { success: false, error: "Invalid token received" };
     }
+
+    // session storage 
+    sessionStorage.setItem('authToken',data.token);
+
     // handling sessions using Knox
     const setToken = useAuthStore.getState().setToken;
     setToken(data.token)
@@ -131,6 +136,9 @@ export async function logout(token: string | null) {
       }
       return { success: false, error: `Logout failed with status ${res.status}` };
     }
+
+    // clear the session
+    sessionStorage.clear()
 
     return { success: true };
   } catch (err) {

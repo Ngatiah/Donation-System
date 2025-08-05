@@ -1052,7 +1052,10 @@ class DonationStatisticsView(APIView):
                     donor=donor_profile,
                     is_claimed=True
                 ).aggregate(avg_quantity=Avg('quantity'))
-                response_data['average_donation'] = avg_donated_by_donor_agg['avg_quantity'] or 0.0
+                # response_data['average_donation'] = avg_donated_by_donor_agg['avg_quantity'] or 0.0
+                average_quantity = avg_donated_by_donor_agg['avg_quantity']
+                # Round to nearest whole number and convert to float with `.0`
+                response_data['average_donation'] = float(round(average_quantity)) if average_quantity is not None else 0.0
 
             elif user_role == 'recipient':
                 try:
@@ -1083,7 +1086,11 @@ class DonationStatisticsView(APIView):
                     recipient=recipient_profile,
                     is_claimed=True
                 ).aggregate(avg_quantity=Avg('matched_quantity'))
-                response_data['average_donation'] = avg_received_by_recipient_agg['avg_quantity'] or 0.0
+                # response_data['average_donation'] = avg_received_by_recipient_agg['avg_quantity'] or 0.0
+
+                average_quantity = avg_received_by_recipient_agg['avg_quantity']
+                # Round to nearest whole number and convert to float with `.0`
+                response_data['average_donation'] = float(round(average_quantity)) if average_quantity is not None else 0.0
 
             elif user_role == 'admin':
                 # --- Admin/Platform-Wide Statistics (Overall numbers) ---
