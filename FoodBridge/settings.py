@@ -335,7 +335,7 @@ LOGGING = {
 }
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For dev
-# DEFAULT_FROM_EMAIL = 'ngatiahivy@gmail.com'
+# DEFAULT_FROM_EMAIL = 'example@gmail.com'
 
 # # EMAIL CONFIG
 # # for production or to gmail generally
