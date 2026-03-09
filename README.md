@@ -45,6 +45,7 @@ The project is built as a **"Headless" System**:
 This project was designed and developed by a dedicated 2-woman engineering team:
 
 **Ngatia** ([@Ngatiah](https://www.google.com/search?q=https://github.com/Ngatiah)) — *Backend Architecture, Token Security (Knox), and Database Management.*
+
 **Thuku** ([@peristhuku](https://www.google.com/search?q=https://github.com/peristhuku)) — *Frontend UI/UX Design (React/Tailwind), State Management, and API Integration.*
 
 ---
