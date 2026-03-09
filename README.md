@@ -1,4 +1,4 @@
-# **A Full-Stack AI-Driven AI-DRIVEN FOOD SURPLUS DONATION SYSTEM for Urban Sustainability.**
+# **AI-Driven AI-DRIVEN FOOD SURPLUS DONATION SYSTEM**
 
 ## 🌟 Project Purpose
 
