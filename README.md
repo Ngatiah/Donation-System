@@ -1,10 +1,9 @@
-# 🍎 FoodBridge: Third Year Computer Science Project
-
-**A Full-Stack AI-Driven AI-DRIVEN FOOD SURPLUS DONATION SYSTEM for Urban Sustainability.**
+# 🍎 FoodBridge: **A Full-Stack AI-Driven AI-DRIVEN FOOD SURPLUS DONATION SYSTEM for Urban Sustainability.**
 
 ## 🌟 Project Purpose
 
-Developed as a core **Third Year Collaborative Project at Moi University**, FoodBridge addresses the logistical gap in food security. This **2-woman project** provides a secure, real-time bridge between businesses with surplus food and charitable organizations, utilizing a decoupled architecture to ensure scalability and data integrity.
+Developed as a core Third Year Collaborative Project at Moi University, FoodBridge addresses the logistical gap in food security. This 2-woman project provides a secure, real-time bridge between businesses with surplus food and charitable organizations, utilizing a decoupled architecture to ensure scalability and data integrity.
+
 ---
 
 ## 🚀 Technical Achievements
