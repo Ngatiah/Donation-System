@@ -1,4 +1,4 @@
-# 🍎 FoodBridge: **A Full-Stack AI-Driven AI-DRIVEN FOOD SURPLUS DONATION SYSTEM for Urban Sustainability.**
+# **A Full-Stack AI-Driven AI-DRIVEN FOOD SURPLUS DONATION SYSTEM for Urban Sustainability.**
 
 ## 🌟 Project Purpose
 
